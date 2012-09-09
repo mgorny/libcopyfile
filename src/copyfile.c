@@ -10,6 +10,8 @@
 #include "copyfile.h"
 
 #include <stddef.h> /* size_t */
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
 #include <errno.h>
@@ -87,4 +89,39 @@ copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 	if (callback && callback(COPYFILE_EOF, in_pos, callback_data))
 		return COPYFILE_ABORTED;
 	return COPYFILE_NO_ERROR;
+}
+
+copyfile_error_t copyfile_copy_regular(const char* source,
+		const char* dest, off_t expected_size,
+		copyfile_callback_t callback, void* callback_data)
+{
+	int fd_in, fd_out;
+
+	fd_in = open(source, O_RDONLY);
+	if (fd_in == -1)
+		return COPYFILE_ERROR_OPEN_SOURCE;
+
+	fd_out = creat(dest, 0666);
+	if (fd_out == -1)
+	{
+		int hold_errno = errno;
+
+		close(fd_in);
+
+		errno = hold_errno;
+		return COPYFILE_ERROR_OPEN_DEST;
+	}
+
+	{
+		copyfile_error_t ret
+			= copyfile_copy_stream(fd_in, fd_out, callback, callback_data);
+		int hold_errno = errno;
+
+		if (close(fd_out) && !ret) /* delayed error? */
+			return COPYFILE_ERROR_WRITE;
+		close(fd_in);
+
+		errno = hold_errno;
+		return ret;
+	}
 }

@@ -21,6 +21,8 @@ typedef enum
 {
 	COPYFILE_NO_ERROR = 0,
 
+	COPYFILE_ERROR_OPEN_SOURCE,
+	COPYFILE_ERROR_OPEN_DEST,
 	COPYFILE_ERROR_READ,
 	COPYFILE_ERROR_WRITE,
 
@@ -86,6 +88,37 @@ typedef int (*copyfile_callback_t)(copyfile_error_t state, off_t pos,
  * error code.
  */
 copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
+		copyfile_callback_t callback, void* callback_data);
+
+/**
+ * Copy the contents of a regular file onto a new file.
+ *
+ * Similarly to 'cp', this function takes no special care of the file
+ * type. It just reads source until EOF, and writes the data to dest
+ * (replacing it if it exists). If the input file is a pipe, it will
+ * just copy the data written to the other end, and block until it is
+ * closed.
+ *
+ * The @dest argument has to be a full path to the new file and not
+ * just a directory.
+ *
+ * The @expected_size can hold the expected size of the file,
+ * or otherwise be 0. If it's non-zero, the function will try to
+ * preallocate a space for the new file.
+ *
+ * If @callback is non-NULL, it will be used to report progress and/or
+ * errors. The @callback_data will be passed to it. For more details,
+ * see copyfile_callback_t description.
+ *
+ * If @callback is NULL, default error handling will be used. The EINTR
+ * error will be retried indefinitely, and other errors will cause
+ * immediate failure.
+ *
+ * Returns 0 on success, an error otherwise. errno will hold the system
+ * error code.
+ */
+copyfile_error_t copyfile_copy_regular(const char* source,
+		const char* dest, off_t expected_size,
 		copyfile_callback_t callback, void* callback_data);
 
 #endif /*COPYFILE_H*/
