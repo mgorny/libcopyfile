@@ -6,6 +6,9 @@ AM_INIT_AUTOMAKE([1.6 foreign dist-bzip2 subdir-objects])
 AC_PROG_CC([c99 cc])
 LT_INIT([disable-static])
 
+AC_USE_SYSTEM_EXTENSIONS
+AC_CHECK_FUNCS([posix_fallocate])
+
 AC_ARG_ENABLE([debug],
 	AS_HELP_STRING([--enable-debug], [Enable stderr debug]))
 

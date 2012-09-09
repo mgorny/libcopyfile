@@ -96,6 +96,9 @@ copyfile_error_t copyfile_copy_regular(const char* source,
 		copyfile_callback_t callback, void* callback_data)
 {
 	int fd_in, fd_out;
+#ifdef HAVE_POSIX_FALLOCATE
+	int preallocated = 0;
+#endif
 
 	fd_in = open(source, O_RDONLY);
 	if (fd_in == -1)
@@ -112,10 +115,36 @@ copyfile_error_t copyfile_copy_regular(const char* source,
 		return COPYFILE_ERROR_OPEN_DEST;
 	}
 
+#ifdef HAVE_POSIX_FALLOCATE
+	if (expected_size && !posix_fallocate(fd_out, 0, expected_size))
+		++preallocated;
+#endif
+
 	{
 		copyfile_error_t ret
 			= copyfile_copy_stream(fd_in, fd_out, callback, callback_data);
 		int hold_errno = errno;
+
+#ifdef HAVE_POSIX_FALLOCATE
+		if (preallocated)
+		{
+			off_t pos = lseek(fd_out, 0, SEEK_CUR);
+			if (pos != -1)
+			{
+				int trunc_ret = ftruncate(fd_out, pos);
+				if (trunc_ret && !ret)
+				{
+					ret = COPYFILE_ERROR_TRUNCATE;
+					hold_errno = trunc_ret;
+				}
+			}
+			else if (!ret)
+			{
+				ret = COPYFILE_ERROR_TRUNCATE;
+				hold_errno = errno;
+			}
+		}
+#endif
 
 		if (close(fd_out) && !ret) /* delayed error? */
 			return COPYFILE_ERROR_WRITE;
