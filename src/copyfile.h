@@ -26,6 +26,10 @@ typedef enum
 	COPYFILE_ERROR_READ,
 	COPYFILE_ERROR_WRITE,
 	COPYFILE_ERROR_TRUNCATE,
+	COPYFILE_ERROR_READLINK,
+	COPYFILE_ERROR_SYMLINK,
+	COPYFILE_ERROR_MALLOC,
+	COPYFILE_ERROR_INTERNAL,
 
 	COPYFILE_ABORTED,
 	COPYFILE_EOF,
@@ -121,5 +125,24 @@ copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 copyfile_error_t copyfile_copy_regular(const char* source,
 		const char* dest, off_t expected_size,
 		copyfile_callback_t callback, void* callback_data);
+
+/**
+ * Copy the symlink to a new location, preserving the destination.
+ *
+ * Note that the destination will be preserved without modifications.
+ * Especially, relative symlinks will now point relative to the new
+ * location.
+ *
+ * The @dest argument has to be a full path to the new file and not
+ * just a directory.
+ *
+ * If the length of symlink is known, it should be passed
+ * as @expected_length. Otherwise, @expected_length should be 0.
+ *
+ * Returns 0 on success, an error otherwise. errno will hold the system
+ * error code.
+ */
+copyfile_error_t copyfile_copy_symlink(const char* source,
+		const char* dest, size_t expected_length);
 
 #endif /*COPYFILE_H*/

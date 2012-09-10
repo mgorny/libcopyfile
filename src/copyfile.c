@@ -9,12 +9,14 @@
 
 #include "copyfile.h"
 
-#include <stddef.h> /* size_t */
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
 #include <errno.h>
+#include <limits.h>
+#include <assert.h>
 
 #ifndef COPYFILE_BUFFER_SIZE
 #	define COPYFILE_BUFFER_SIZE 4096
@@ -151,6 +153,89 @@ copyfile_error_t copyfile_copy_regular(const char* source,
 		close(fd_in);
 
 		errno = hold_errno;
+		return ret;
+	}
+}
+
+static copyfile_error_t try_copy_symlink(const char* source,
+		const char* dest, char* buf, ssize_t buf_size)
+{
+	ssize_t rd = readlink(source, buf, buf_size);
+
+	if (rd == -1)
+		return COPYFILE_ERROR_READLINK;
+
+	if (rd < buf_size)
+	{
+		buf[rd + 1] = 0;
+
+		if (symlink(buf, dest))
+			return COPYFILE_ERROR_SYMLINK;
+		return COPYFILE_NO_ERROR;
+	}
+
+	return COPYFILE_EOF;
+}
+
+copyfile_error_t copyfile_copy_symlink(const char* source,
+		const char* dest, size_t expected_length)
+{
+	/* remember that the last cell is for null-terminator */
+
+	/* try to avoid dynamic allocation */
+	char buf[COPYFILE_BUFFER_SIZE];
+	size_t buf_size = sizeof(buf);
+
+	if (expected_length < buf_size)
+	{
+		int ret = try_copy_symlink(source, dest, buf, buf_size);
+		if (ret != COPYFILE_EOF)
+			return ret;
+
+		buf_size *= 2;
+	}
+	else
+		buf_size = expected_length + 1;
+
+	{
+		char* buf = 0;
+		int ret;
+
+		/* size_t is always unsigned, so -1 safely becomes SIZE_MAX */
+		const size_t my_size_max = -1;
+		const size_t max_size = my_size_max > SSIZE_MAX
+			? SSIZE_MAX : my_size_max;
+
+		do
+		{
+			char* next_buf = realloc(buf, buf_size);
+
+			if (!next_buf)
+			{
+				ret = COPYFILE_ERROR_MALLOC;
+				if (!buf) /* avoid freeing in the less likely branch */
+					return ret;
+				break;
+			}
+			buf = next_buf;
+
+			ret = try_copy_symlink(source, dest, buf, buf_size);
+
+			if (buf_size < max_size / 2)
+				buf_size *= 2;
+			else
+			{
+				assert(buf_size != max_size);
+
+				if (buf_size != max_size)
+					buf_size = max_size;
+				else /* in case of NDEBUG */
+					ret = COPYFILE_ERROR_INTERNAL;
+			}
+		}
+		while (ret == COPYFILE_EOF);
+
+		free(buf);
 		return ret;
 	}
 }
