@@ -229,12 +229,10 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 				buf_size *= 2;
 			else
 			{
-				assert(buf_size != max_size);
-
 				if (buf_size != max_size)
 					buf_size = max_size;
-				else /* in case of NDEBUG */
-					ret = COPYFILE_ERROR_INTERNAL;
+				else
+					ret = COPYFILE_ERROR_SYMLINK_TARGET_TOO_LONG;
 			}
 		}
 		while (ret == COPYFILE_EOF);
@@ -287,7 +285,7 @@ copyfile_error_t copyfile_copy_file(const char* source,
 				const size_t dest_size = strlen(dest) + 1;
 
 				if (dest_size > sizeof(addr.sun_path))
-					return COPYFILE_ERROR_INTERNAL; /* XXX */
+					return COPYFILE_ERROR_SOCKET_DEST_TOO_LONG;
 
 				fd = socket(AF_UNIX, SOCK_STREAM, 0);
 				if (fd == -1)

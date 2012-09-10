@@ -20,8 +20,19 @@
  */
 typedef enum
 {
+	/**
+	 * A special value indicating complete success. It is guaranteed to
+	 * evaluate to zero, so you can use the '!' operator to check
+	 * function return for success.
+	 *
+	 * The value of errno is undefined.
+	 */
 	COPYFILE_NO_ERROR = 0,
 
+	/**
+	 * Common error domains. These values indicate the function which
+	 * returned an error. The system error code can be found in errno.
+	 */
 	COPYFILE_ERROR_OPEN_SOURCE,
 	COPYFILE_ERROR_OPEN_DEST,
 	COPYFILE_ERROR_READ,
@@ -30,16 +41,41 @@ typedef enum
 	COPYFILE_ERROR_READLINK,
 	COPYFILE_ERROR_SYMLINK,
 	COPYFILE_ERROR_MALLOC,
-	COPYFILE_ERROR_INTERNAL,
 	COPYFILE_ERROR_STAT,
 	COPYFILE_ERROR_MKDIR,
 	COPYFILE_ERROR_MKFIFO,
 	COPYFILE_ERROR_MKNOD,
 	COPYFILE_ERROR_SOCKET,
 	COPYFILE_ERROR_BIND,
+	COPYFILE_ERROR_DOMAIN_MAX,
 
-	COPYFILE_ABORTED,
+	/**
+	 * An internal error. This should never happen, and is always backed
+	 * up with an assert(). If it happens, you should report a bug.
+	 */
+	COPYFILE_ERROR_INTERNAL = 100,
+	/**
+	 * The symlink target is longer than we can actually handle. This is
+	 * something you should probably investigate and report, since this
+	 * means that the readlink() function probably can't read it...
+	 * or at least can't fit the length in the return type.
+	 */
+	COPYFILE_ERROR_SYMLINK_TARGET_TOO_LONG,
+	/**
+	 * The destination for the unix socket is longer than sockaddr_un
+	 * can handle. There is probably nothing we can do about it.
+	 */
+	COPYFILE_ERROR_SOCKET_DEST_TOO_LONG,
+
+	/**
+	 * The operation was aborted by a callback function.
+	 */
+	COPYFILE_ABORTED = 200,
+	/**
+	 * A special end-of-file status constant for callback.
+	 */
 	COPYFILE_EOF,
+
 	COPYFILE_ERROR_MAX
 } copyfile_error_t;
 
