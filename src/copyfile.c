@@ -10,13 +10,15 @@
 #include "copyfile.h"
 
 #include <stdlib.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
 #include <errno.h>
 #include <limits.h>
 #include <assert.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <string.h>
 
 #ifndef COPYFILE_BUFFER_SIZE
 #	define COPYFILE_BUFFER_SIZE 4096
@@ -25,6 +27,8 @@
 #ifndef COPYFILE_CALLBACK_OPCOUNT
 #	define COPYFILE_CALLBACK_OPCOUNT 64
 #endif
+
+static int not_reached = 0;
 
 copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 		copyfile_callback_t callback, void* callback_data)
@@ -238,4 +242,70 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 		free(buf);
 		return ret;
 	}
+}
+
+copyfile_error_t copyfile_copy_file(const char* source,
+		const char* dest, const struct stat* st,
+		copyfile_callback_t callback, void* callback_data)
+{
+	struct stat buf;
+
+	if (!st)
+	{
+		if (lstat(source, &buf))
+			return COPYFILE_ERROR_STAT;
+
+		st = &buf;
+	}
+
+	switch (st->st_mode & S_IFMT)
+	{
+		case S_IFREG:
+			return copyfile_copy_regular(source, dest, st->st_size,
+					callback, callback_data);
+		/* XXX: use callback reasonably in other cases */
+		case S_IFLNK:
+			return copyfile_copy_symlink(source, dest, st->st_size);
+		case S_IFDIR:
+			if (mkdir(dest, 0777))
+				return COPYFILE_ERROR_MKDIR;
+			break;
+		case S_IFIFO:
+			if (mkfifo(dest, 0666))
+				return COPYFILE_ERROR_MKFIFO;
+			break;
+		case S_IFBLK:
+		case S_IFCHR:
+			if (mknod(dest, (st->st_mode & S_IFMT) | 0666, st->st_rdev))
+				return COPYFILE_ERROR_MKNOD;
+			break;
+		case S_IFSOCK:
+			{
+				int fd;
+				struct sockaddr_un addr;
+
+				const size_t dest_size = strlen(dest) + 1;
+
+				if (dest_size > sizeof(addr.sun_path))
+					return COPYFILE_ERROR_INTERNAL; /* XXX */
+
+				fd = socket(AF_UNIX, SOCK_STREAM, 0);
+				if (fd == -1)
+					return COPYFILE_ERROR_SOCKET;
+
+				addr.sun_family = AF_UNIX;
+				memcpy(addr.sun_path, dest, dest_size);
+
+				if (bind(fd, &addr, sizeof(addr)))
+					return COPYFILE_ERROR_BIND;
+
+				close(fd);
+			}
+			break;
+		default:
+			assert(not_reached);
+			return COPYFILE_ERROR_INTERNAL;
+	}
+
+	return COPYFILE_NO_ERROR;
 }

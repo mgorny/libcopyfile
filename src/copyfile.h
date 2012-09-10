@@ -9,6 +9,7 @@
 #define COPYFILE_H 1
 
 #include <sys/types.h>
+#include <sys/stat.h>
 
 /**
  * The error return type.
@@ -30,6 +31,12 @@ typedef enum
 	COPYFILE_ERROR_SYMLINK,
 	COPYFILE_ERROR_MALLOC,
 	COPYFILE_ERROR_INTERNAL,
+	COPYFILE_ERROR_STAT,
+	COPYFILE_ERROR_MKDIR,
+	COPYFILE_ERROR_MKFIFO,
+	COPYFILE_ERROR_MKNOD,
+	COPYFILE_ERROR_SOCKET,
+	COPYFILE_ERROR_BIND,
 
 	COPYFILE_ABORTED,
 	COPYFILE_EOF,
@@ -144,5 +151,35 @@ copyfile_error_t copyfile_copy_regular(const char* source,
  */
 copyfile_error_t copyfile_copy_symlink(const char* source,
 		const char* dest, size_t expected_length);
+
+/**
+ * Copy the given file to a new location, preserving its type.
+ *
+ * If @source is a regular file, the file contents will be copied
+ * to the new location. If it is a directory, an empty directory will be
+ * created. If it is a symbolic link, the symbolic link will be copied.
+ * Otherwise, a new special file of an appropriate type will be created.
+ *
+ * This is roughly equivalent to 'cp -R' without copying recursively
+ * and without replacing directories with files. Note that any other
+ * file type may be removed before copying.
+ *
+ * The @dest argument has to be a full path to the new file and not
+ * just a directory.
+ *
+ * If the information about the file has been obtained using the lstat()
+ * function, a pointer to the obtained structure should be passed
+ * as @st. Otherwise, a NULL pointer should be passed.
+ *
+ * Please note that if the information was obtained using the stat()
+ * function instead and if @source is a symbolic link, the underlying
+ * file will be copied instead.
+ *
+ * Returns 0 on success, an error otherwise. errno will hold the system
+ * error code.
+ */
+copyfile_error_t copyfile_copy_file(const char* source,
+		const char* dest, const struct stat* st,
+		copyfile_callback_t callback, void* callback_data);
 
 #endif /*COPYFILE_H*/
