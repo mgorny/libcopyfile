@@ -186,7 +186,8 @@ static copyfile_error_t try_copy_symlink(const char* source,
 }
 
 copyfile_error_t copyfile_copy_symlink(const char* source,
-		const char* dest, size_t expected_length)
+		const char* dest, size_t expected_length,
+		copyfile_callback_t callback, void* callback_data)
 {
 	/* remember that the last cell is for null-terminator */
 
@@ -194,11 +195,43 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 	char buf[COPYFILE_BUFFER_SIZE];
 	size_t buf_size = sizeof(buf);
 
+	copyfile_progress_t progress;
+
+	progress.symlink.length = expected_length;
+	if (callback && callback(COPYFILE_NO_ERROR, S_IFLNK, progress, callback_data))
+		return COPYFILE_ABORTED;
+
 	if (expected_length < buf_size)
 	{
-		int ret = try_copy_symlink(source, dest, buf, buf_size);
-		if (ret != COPYFILE_EOF)
-			return ret;
+		int ret;
+
+		while (1)
+		{
+			ret = try_copy_symlink(source, dest, buf, buf_size);
+
+			if (ret != COPYFILE_EOF)
+			{
+				if (!ret)
+				{
+					if (callback)
+					{
+						progress.symlink.target = buf;
+						if (callback(COPYFILE_EOF, S_IFLNK, progress,
+									callback_data))
+							return COPYFILE_ABORTED;
+					}
+
+					return ret;
+				}
+
+				/* does the user want to retry? */
+				if (!callback || callback(ret, S_IFLNK, progress,
+							callback_data))
+					return ret;
+			}
+			else
+				break;
+		}
 
 		buf_size *= 2;
 	}
@@ -214,13 +247,18 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 		const size_t max_size = my_size_max > SSIZE_MAX
 			? SSIZE_MAX : my_size_max;
 
-		do
+		while (1)
 		{
 			char* next_buf = realloc(buf, buf_size);
 
 			if (!next_buf)
 			{
 				ret = COPYFILE_ERROR_MALLOC;
+
+				/* retry? */
+				if (callback && !callback(ret, S_IFLNK, progress, callback_data))
+					continue;
+
 				if (!buf) /* avoid freeing in the less likely branch */
 					return ret;
 				break;
@@ -229,17 +267,39 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 
 			ret = try_copy_symlink(source, dest, buf, buf_size);
 
-			if (buf_size < max_size / 2)
-				buf_size *= 2;
+			if (!ret)
+			{
+				if (callback)
+				{
+					progress.symlink.target = buf;
+					if (callback(COPYFILE_EOF, S_IFLNK, progress,
+								callback_data))
+						return COPYFILE_ABORTED;
+				}
+				break;
+			}
+			else if (ret == COPYFILE_EOF)
+			{
+				if (buf_size < max_size / 2)
+					buf_size *= 2;
+				else
+				{
+					if (buf_size != max_size)
+						buf_size = max_size;
+					else
+					{
+						ret = COPYFILE_ERROR_SYMLINK_TARGET_TOO_LONG;
+						break;
+					}
+				}
+			}
 			else
 			{
-				if (buf_size != max_size)
-					buf_size = max_size;
-				else
-					ret = COPYFILE_ERROR_SYMLINK_TARGET_TOO_LONG;
+				/* does the user want to retry? */
+				if (!callback && callback(ret, S_IFLNK, progress, callback_data))
+					break;
 			}
 		}
-		while (ret == COPYFILE_EOF);
 
 		free(buf);
 		return ret;
@@ -267,7 +327,8 @@ copyfile_error_t copyfile_copy_file(const char* source,
 					callback, callback_data);
 		/* XXX: use callback reasonably in other cases */
 		case S_IFLNK:
-			return copyfile_copy_symlink(source, dest, st->st_size);
+			return copyfile_copy_symlink(source, dest, st->st_size,
+					callback, callback_data);
 		case S_IFDIR:
 			if (mkdir(dest, 0777))
 				return COPYFILE_ERROR_MKDIR;

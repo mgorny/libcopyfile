@@ -86,8 +86,6 @@ typedef union
 {
 	/**
 	 * Progress information for regular file (stream) copy.
-	 *
-	 * This is available in both EOF and non-EOF callbacks.
 	 */
 	struct
 	{
@@ -108,6 +106,27 @@ typedef union
 		 */
 		off_t size;
 	} data;
+
+	/**
+	 * Symbolic link copying-specific information.
+	 */
+	union
+	{
+		/**
+		 * Symlink target length, in case of symbolic link copy.
+		 *
+		 * This is available only in a non-EOF callback. It is a value
+		 * passed by user or otherwise obtained from lstat() if relevant.
+		 * It may be 0 if not provided. It may be outdated.
+		 */
+		off_t length;
+		/**
+		 * Symlink target, in case of symbolic link copy.
+		 *
+		 * This is available only in an EOF callback.
+		 */
+		const char* target;
+	} symlink;
 } copyfile_progress_t;
 
 /**
@@ -226,7 +245,8 @@ copyfile_error_t copyfile_copy_regular(const char* source,
  * error code.
  */
 copyfile_error_t copyfile_copy_symlink(const char* source,
-		const char* dest, size_t expected_length);
+		const char* dest, size_t expected_length,
+		copyfile_callback_t callback, void* callback_data);
 
 /**
  * Copy the given file to a new location, preserving its type.
