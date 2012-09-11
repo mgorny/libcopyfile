@@ -14,4 +14,6 @@ Makefile.in
 /m4
 /stamp-h1
 
+*.la
+*.lo
 *.o
