@@ -28,7 +28,12 @@
 #	define COPYFILE_CALLBACK_OPCOUNT 64
 #endif
 
-static int not_reached = 0;
+static const int not_reached = 0;
+
+/* default permissions */
+static const mode_t perm_dir = S_IRWXU | S_IRWXG | S_IRWXO;
+static const mode_t perm_file = perm_dir
+		& ~(S_IXUSR | S_IXGRP | S_IXOTH);
 
 copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 		off_t expected_size, copyfile_callback_t callback,
@@ -114,7 +119,7 @@ copyfile_error_t copyfile_copy_regular(const char* source,
 	if (fd_in == -1)
 		return COPYFILE_ERROR_OPEN_SOURCE;
 
-	fd_out = creat(dest, 0666);
+	fd_out = creat(dest, perm_file);
 	if (fd_out == -1)
 	{
 		int hold_errno = errno;
@@ -353,16 +358,16 @@ copyfile_error_t copyfile_copy_file(const char* source,
 		switch (ftype)
 		{
 			case S_IFDIR:
-				ret = mkdir(dest, 0777);
+				ret = mkdir(dest, perm_dir);
 				err = COPYFILE_ERROR_MKDIR;
 				break;
 			case S_IFIFO:
-				ret = mkfifo(dest, 0666);
+				ret = mkfifo(dest, perm_file);
 				err = COPYFILE_ERROR_MKFIFO;
 				break;
 			case S_IFBLK:
 			case S_IFCHR:
-				ret = mknod(dest, ftype | 0666, st->st_rdev);
+				ret = mknod(dest, ftype | perm_file, st->st_rdev);
 				err = COPYFILE_ERROR_MKNOD;
 				break;
 			case S_IFSOCK:
