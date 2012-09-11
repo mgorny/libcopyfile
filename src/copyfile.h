@@ -127,6 +127,13 @@ typedef union
 		 */
 		const char* target;
 	} symlink;
+
+	/**
+	 * Device identifier, in case of device file copy.
+	 *
+	 * This is available in both EOF and non-EOF callbacks.
+	 */
+	dev_t device;
 } copyfile_progress_t;
 
 /**

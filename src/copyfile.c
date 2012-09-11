@@ -333,6 +333,10 @@ copyfile_error_t copyfile_copy_file(const char* source,
 			return copyfile_copy_symlink(source, dest, st->st_size,
 					callback, callback_data);
 
+		case S_IFBLK:
+		case S_IFCHR:
+			progress.device = st->st_rdev;
+			break;
 		default:
 			;
 	}
