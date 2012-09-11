@@ -80,6 +80,37 @@ typedef enum
 } copyfile_error_t;
 
 /**
+ * An uniform type for callback progress information.
+ */
+typedef union
+{
+	/**
+	 * Progress information for regular file (stream) copy.
+	 *
+	 * This is available in both EOF and non-EOF callbacks.
+	 */
+	struct
+	{
+		/**
+		 * Current offset in the stream.
+		 *
+		 * The offset will be calculated from the beginning of copying.
+		 * In an EOF case, it will be the actual amount of data copied.
+		 */
+		off_t offset;
+		/**
+		 * Apparent file size.
+		 *
+		 * The size will be the value passed by user or otherwise
+		 * obtained from stat() if relevant. It may be 0 if not
+		 * provided. It won't be updated in an EOF case, thus it may be
+		 * smaller than offset.
+		 */
+		off_t size;
+	} data;
+} copyfile_progress_t;
+
+/**
  * The callback for copyfile_copy_stream().
  *
  * The callback function is called in the following cases:
@@ -89,18 +120,23 @@ typedef enum
  * - at the end of copying,
  * - in case of an error.
  *
- * In any of those cases, the @pos parameter states the total number of
- * bytes read from the stream. The @data parameter carries any
- * user-provided data.
+ * In any of those cases, the @type parameter will hold the file type,
+ * in form of a mode_t constant (as returned by stat()). The @progress
+ * parameter carries detailed progress information, and @data carries
+ * any user-provided data.
  *
  * At the start of copying and during the process, the callback is
  * called with @state == COPYFILE_NO_ERROR. At the end of file, @state
- * == COPYFILE_EOF.
+ * is COPYFILE_EOF.
  *
  * In case of an error, @state has any other value; and the system errno
  * variable is set appropriately. Note that the errno may be EINTR as
  * well, which allows the user to interrupt the copy and enter
  * the callback.
+ *
+ * The data types available in the @progress union for various file
+ * types and states are described in copyfile_progress_t description.
+ * In other cases, the contents of the union are undefined.
  *
  * In normal call case, the callback should return 0 in order to
  * continue copying, or a non-zero value to abort it. In the latter
@@ -110,8 +146,8 @@ typedef enum
  * in order to retry the operation, and a non-zero value to fail.
  * In that case, the original failure will be returned by function.
  */
-typedef int (*copyfile_callback_t)(copyfile_error_t state, off_t pos,
-		void* data);
+typedef int (*copyfile_callback_t)(copyfile_error_t state, mode_t type,
+		copyfile_progress_t progress, void* data);
 
 /**
  * Copy the contents of an input stream onto an output stream.
@@ -123,6 +159,9 @@ typedef int (*copyfile_callback_t)(copyfile_error_t state, off_t pos,
  *
  * The streams will not be closed. In case of an error, the current
  * offset on both streams is undefined.
+ *
+ * The @expected_size can hold the expected size of the file,
+ * or otherwise be 0. It will be only passed through to the callback.
  *
  * If @callback is non-NULL, it will be used to report progress and/or
  * errors. The @callback_data will be passed to it. For more details,
@@ -136,7 +175,8 @@ typedef int (*copyfile_callback_t)(copyfile_error_t state, off_t pos,
  * error code.
  */
 copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
-		copyfile_callback_t callback, void* callback_data);
+		off_t expected_size, copyfile_callback_t callback,
+		void* callback_data);
 
 /**
  * Copy the contents of a regular file onto a new file.

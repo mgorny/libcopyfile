@@ -31,12 +31,16 @@
 static int not_reached = 0;
 
 copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
-		copyfile_callback_t callback, void* callback_data)
+		off_t expected_size, copyfile_callback_t callback,
+		void* callback_data)
 {
-	off_t in_pos = 0;
 	char buf[COPYFILE_BUFFER_SIZE];
 
 	int opcount = 0;
+	copyfile_progress_t progress;
+
+	progress.data.offset = 0;
+	progress.data.size = expected_size;
 
 	while (1)
 	{
@@ -47,7 +51,7 @@ copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 		{
 			if (++opcount >= COPYFILE_CALLBACK_OPCOUNT)
 			{
-				if (callback(COPYFILE_NO_ERROR, in_pos, callback_data))
+				if (callback(COPYFILE_NO_ERROR, S_IFREG, progress, callback_data))
 					return COPYFILE_ABORTED;
 				opcount = 0;
 			}
@@ -59,7 +63,7 @@ copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 			copyfile_error_t err = COPYFILE_ERROR_READ;
 
 			if (callback
-					? !callback(err, in_pos, callback_data)
+					? !callback(err, S_IFREG, progress, callback_data)
 					: errno == EINTR)
 				continue;
 			else
@@ -68,7 +72,7 @@ copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 		else if (rd == 0)
 			break;
 
-		in_pos += rd;
+		progress.data.offset += rd;
 
 		while (rd > 0)
 		{
@@ -78,7 +82,7 @@ copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 				copyfile_error_t err = COPYFILE_ERROR_WRITE;
 
 				if (callback
-						? !callback(err, in_pos, callback_data)
+						? !callback(err, S_IFREG, progress, callback_data)
 						: errno == EINTR)
 					continue;
 				else
@@ -92,7 +96,7 @@ copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 		}
 	}
 
-	if (callback && callback(COPYFILE_EOF, in_pos, callback_data))
+	if (callback && callback(COPYFILE_EOF, S_IFREG, progress, callback_data))
 		return COPYFILE_ABORTED;
 	return COPYFILE_NO_ERROR;
 }
@@ -127,8 +131,8 @@ copyfile_error_t copyfile_copy_regular(const char* source,
 #endif
 
 	{
-		copyfile_error_t ret
-			= copyfile_copy_stream(fd_in, fd_out, callback, callback_data);
+		copyfile_error_t ret = copyfile_copy_stream(fd_in, fd_out,
+				expected_size, callback, callback_data);
 		int hold_errno = errno;
 
 #ifdef HAVE_POSIX_FALLOCATE
