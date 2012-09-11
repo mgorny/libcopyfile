@@ -180,8 +180,7 @@ typedef int (*copyfile_callback_t)(copyfile_error_t state, mode_t type,
  *
  * This function takes no special care of the file type -- it just reads
  * the input stream until it reaches EOF, and writes to the output
- * stream. If the input stream is a pipe, it will actually block until
- * the other end is closed.
+ * stream.
  *
  * The streams will not be closed. In case of an error, the current
  * offset on both streams is undefined.
@@ -208,10 +207,11 @@ copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
  * Copy the contents of a regular file onto a new file.
  *
  * Similarly to 'cp', this function takes no special care of the file
- * type. It just reads source until EOF, and writes the data to dest
- * (replacing it if it exists). If the input file is a pipe, it will
- * just copy the data written to the other end, and block until it is
- * closed.
+ * type. It just reads @source until EOF, and writes the data to @dest.
+ * If @dest exists and is a regular file, it will be replaced. If it is
+ * a link to regular file (either hard or symbolic one), the target file
+ * will be replaced. It is a named pipe or a special file, the data will
+ * be copied into it.
  *
  * The @dest argument has to be a full path to the new file and not
  * just a directory.
@@ -243,7 +243,7 @@ copyfile_error_t copyfile_copy_regular(const char* source,
  * location.
  *
  * The @dest argument has to be a full path to the new file and not
- * just a directory.
+ * just a directory. It must not exist.
  *
  * If the length of symlink is known, it should be passed
  * as @expected_length. Otherwise, @expected_length should be 0.
@@ -264,8 +264,7 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
  * Otherwise, a new special file of an appropriate type will be created.
  *
  * This is roughly equivalent to 'cp -R' without copying recursively
- * and without replacing directories with files. Note that any other
- * file type may be removed before copying.
+ * and without any special replacement behavior.
  *
  * The @dest argument has to be a full path to the new file and not
  * just a directory.
