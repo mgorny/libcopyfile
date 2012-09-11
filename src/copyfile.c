@@ -311,6 +311,8 @@ copyfile_error_t copyfile_copy_file(const char* source,
 		copyfile_callback_t callback, void* callback_data)
 {
 	struct stat buf;
+	mode_t ftype;
+	copyfile_progress_t progress;
 
 	if (!st)
 	{
@@ -320,55 +322,91 @@ copyfile_error_t copyfile_copy_file(const char* source,
 		st = &buf;
 	}
 
-	switch (st->st_mode & S_IFMT)
+	ftype = st->st_mode & S_IFMT;
+
+	switch (ftype)
 	{
 		case S_IFREG:
 			return copyfile_copy_regular(source, dest, st->st_size,
 					callback, callback_data);
-		/* XXX: use callback reasonably in other cases */
 		case S_IFLNK:
 			return copyfile_copy_symlink(source, dest, st->st_size,
 					callback, callback_data);
-		case S_IFDIR:
-			if (mkdir(dest, 0777))
-				return COPYFILE_ERROR_MKDIR;
-			break;
-		case S_IFIFO:
-			if (mkfifo(dest, 0666))
-				return COPYFILE_ERROR_MKFIFO;
-			break;
-		case S_IFBLK:
-		case S_IFCHR:
-			if (mknod(dest, (st->st_mode & S_IFMT) | 0666, st->st_rdev))
-				return COPYFILE_ERROR_MKNOD;
-			break;
-		case S_IFSOCK:
-			{
-				int fd;
-				struct sockaddr_un addr;
 
-				const size_t dest_size = strlen(dest) + 1;
-
-				if (dest_size > sizeof(addr.sun_path))
-					return COPYFILE_ERROR_SOCKET_DEST_TOO_LONG;
-
-				fd = socket(AF_UNIX, SOCK_STREAM, 0);
-				if (fd == -1)
-					return COPYFILE_ERROR_SOCKET;
-
-				addr.sun_family = AF_UNIX;
-				memcpy(addr.sun_path, dest, dest_size);
-
-				if (bind(fd, &addr, sizeof(addr)))
-					return COPYFILE_ERROR_BIND;
-
-				close(fd);
-			}
-			break;
 		default:
-			assert(not_reached);
-			return COPYFILE_ERROR_INTERNAL;
+			;
 	}
+
+	if (callback && callback(COPYFILE_NO_ERROR, ftype, progress,
+				callback_data))
+		return COPYFILE_ABORTED;
+
+	while (1)
+	{
+		int ret;
+		copyfile_error_t err;
+
+		switch (ftype)
+		{
+			case S_IFDIR:
+				ret = mkdir(dest, 0777);
+				err = COPYFILE_ERROR_MKDIR;
+				break;
+			case S_IFIFO:
+				ret = mkfifo(dest, 0666);
+				err = COPYFILE_ERROR_MKFIFO;
+				break;
+			case S_IFBLK:
+			case S_IFCHR:
+				ret = mknod(dest, ftype | 0666, st->st_rdev);
+				err = COPYFILE_ERROR_MKNOD;
+				break;
+			case S_IFSOCK:
+				{
+					int fd;
+					struct sockaddr_un addr;
+
+					const size_t dest_size = strlen(dest) + 1;
+
+					if (dest_size > sizeof(addr.sun_path))
+						return COPYFILE_ERROR_SOCKET_DEST_TOO_LONG;
+
+					fd = socket(AF_UNIX, SOCK_STREAM, 0);
+					if (fd != -1)
+					{
+						addr.sun_family = AF_UNIX;
+						memcpy(addr.sun_path, dest, dest_size);
+
+						ret = bind(fd, &addr, sizeof(addr));
+						err = COPYFILE_ERROR_BIND;
+
+						close(fd);
+					}
+					else
+					{
+						ret = fd;
+						err = COPYFILE_ERROR_SOCKET;
+					}
+				}
+				break;
+			default:
+				assert(not_reached);
+				return COPYFILE_ERROR_INTERNAL;
+		}
+
+		if (!ret)
+			break;
+		else
+		{
+			if (!callback || callback(err, ftype, progress,
+						callback_data))
+				return err;
+		}
+	}
+
+	if (callback && callback(COPYFILE_EOF, ftype, progress,
+				callback_data))
+		return COPYFILE_ABORTED;
 
 	return COPYFILE_NO_ERROR;
 }
