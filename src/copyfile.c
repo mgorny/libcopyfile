@@ -448,11 +448,19 @@ copyfile_error_t copyfile_set_stat(const char* path,
 		gid_t new_group = flags & COPYFILE_COPY_GROUP
 			? st->st_gid : -1;
 
+#ifndef HAVE_LCHOWN
 		/* don't try to chown() a symbolic link */
 		if (!S_ISLNK(st->st_mode))
+#endif
 		{
+#ifdef HAVE_LCHOWN
+			if (lchown(path, new_user, new_group)
+					&& errno != EOPNOTSUPP)
+				return COPYFILE_ERROR_CHOWN;
+#else
 			if (chown(path, new_user, new_group))
 				return COPYFILE_ERROR_CHOWN;
+#endif
 
 			if (result_flags)
 				*result_flags |= flags & COPYFILE_COPY_OWNER;

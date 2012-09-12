@@ -7,7 +7,7 @@ AC_PROG_CC([c99 cc])
 AC_USE_SYSTEM_EXTENSIONS
 LT_INIT([disable-static])
 
-AC_CHECK_FUNCS([posix_fallocate])
+AC_CHECK_FUNCS([lchown posix_fallocate])
 
 AC_ARG_ENABLE([debug],
 	AS_HELP_STRING([--enable-debug], [Enable stderr debug]))
