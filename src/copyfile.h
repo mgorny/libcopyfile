@@ -233,6 +233,12 @@ typedef union
  * Please note that in case of an error, callback should return 0
  * in order to retry the operation, and a non-zero value to fail.
  * In that case, the original failure will be returned by function.
+ *
+ * Also note that the functions don't copy errno before calling
+ * the callback on error. If your callback function calls functions
+ * which can change errno in that case, you need to either restore its
+ * value in the callback or be aware that the errno after the function
+ * return will be set in callback.
  */
 typedef int (*copyfile_callback_t)(copyfile_error_t state, mode_t type,
 		copyfile_progress_t progress, void* data);
