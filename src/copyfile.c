@@ -490,6 +490,28 @@ copyfile_error_t copyfile_set_stat(const char* path,
 
 	if (flags & COPYFILE_COPY_TIMES)
 	{
+#ifdef HAVE_UTIMENSAT
+		{
+			struct timespec t[2];
+
+			if (flags & COPYFILE_COPY_ATIME)
+				t[0] = st->st_atim;
+			else
+				t[0].tv_nsec = UTIME_OMIT;
+
+			if (flags & COPYFILE_COPY_MTIME)
+				t[1] = st->st_mtim;
+			else
+				t[1].tv_nsec = UTIME_OMIT;
+
+			if (utimensat(AT_FDCWD, path, t, AT_SYMLINK_NOFOLLOW)
+					&& errno != EOPNOTSUPP)
+				return COPYFILE_ERROR_UTIME;
+
+			if (result_flags)
+				*result_flags |= (flags & COPYFILE_COPY_TIMES);
+		}
+#else /*!HAVE_UTIMENSAT*/
 		/* don't try utime() on a symbolic link */
 		if (!S_ISLNK(st->st_mode))
 		{
@@ -504,6 +526,7 @@ copyfile_error_t copyfile_set_stat(const char* path,
 			if (result_flags)
 				*result_flags |= COPYFILE_COPY_TIMES;
 		}
+#endif /*HAVE_UTIMENSAT*/
 	}
 
 	return COPYFILE_NO_ERROR;
