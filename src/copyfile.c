@@ -19,6 +19,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <string.h>
+#include <utime.h>
 
 #ifndef COPYFILE_BUFFER_SIZE
 #	define COPYFILE_BUFFER_SIZE 4096
@@ -468,6 +469,24 @@ copyfile_error_t copyfile_set_stat(const char* path,
 
 			if (result_flags)
 				*result_flags |= COPYFILE_COPY_MODE;
+		}
+	}
+
+	if (flags & COPYFILE_COPY_TIMES)
+	{
+		/* don't try utime() on a symbolic link */
+		if (!S_ISLNK(st->st_mode))
+		{
+			struct utimbuf t;
+
+			t.actime = st->st_atime;
+			t.modtime = st->st_mtime;
+
+			if (utime(path, &t))
+				return COPYFILE_ERROR_UTIME;
+
+			if (result_flags)
+				*result_flags |= COPYFILE_COPY_TIMES;
 		}
 	}
 

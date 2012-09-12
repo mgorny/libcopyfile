@@ -49,6 +49,7 @@ typedef enum
 	COPYFILE_ERROR_BIND,
 	COPYFILE_ERROR_CHOWN,
 	COPYFILE_ERROR_CHMOD,
+	COPYFILE_ERROR_UTIME,
 	COPYFILE_ERROR_DOMAIN_MAX,
 
 	/**
@@ -108,14 +109,36 @@ typedef enum
 	COPYFILE_COPY_MODE = 0x04,
 
 	/**
+	 * Copy file modification time.
+	 *
+	 * Note that on some systems it is impossible to change mtime
+	 * without changing atime. On those systems, this will be equivalent
+	 * to COPYFILE_COPY_TIMES.
+	 */
+	COPYFILE_COPY_MTIME = 0x08,
+	/**
+	 * Copy file access time.
+	 *
+	 * Note that on some systems it is impossible to change atime
+	 * without changing mtime. On those systems, this will be equivalent
+	 * to COPYFILE_COPY_TIMES.
+	 */
+	COPYFILE_COPY_ATIME = 0x10,
+	/**
+	 * Copy both file access & modification times.
+	 */
+	COPYFILE_COPY_TIMES = COPYFILE_COPY_MTIME | COPYFILE_COPY_ATIME,
+
+	/**
 	 * Copy all supported stat() metadata of a file.
 	 */
-	COPYFILE_COPY_STAT = COPYFILE_COPY_OWNER | COPYFILE_COPY_MODE,
+	COPYFILE_COPY_STAT = COPYFILE_COPY_OWNER | COPYFILE_COPY_MODE
+		| COPYFILE_COPY_TIMES,
 
 	/**
 	 * Mask of the valid values.
 	 */
-	COPYFILE_MASK = 0x07
+	COPYFILE_MASK = 0x1f
 } copyfile_metadata_flag_t;
 
 /**
