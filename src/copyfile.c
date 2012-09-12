@@ -34,6 +34,8 @@ static const int not_reached = 0;
 static const mode_t perm_dir = S_IRWXU | S_IRWXG | S_IRWXO;
 static const mode_t perm_file = perm_dir
 		& ~(S_IXUSR | S_IXGRP | S_IXOTH);
+static const mode_t all_perm_bits = perm_dir
+		| S_ISUID | S_ISGID | S_ISVTX;
 
 copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 		off_t expected_size, copyfile_callback_t callback,
@@ -427,4 +429,47 @@ copyfile_error_t copyfile_copy_file(const char* source,
 			return copyfile_create_special(dest, ftype, st->st_rdev,
 					callback, callback_data);
 	}
+}
+
+copyfile_error_t copyfile_set_stat(const char* path,
+		const struct stat* st, unsigned int flags,
+		unsigned int* result_flags)
+{
+	assert(st);
+
+	if (result_flags)
+		*result_flags = 0;
+
+	if (flags & COPYFILE_COPY_OWNER)
+	{
+		uid_t new_user = flags & COPYFILE_COPY_USER
+			? st->st_uid : -1;
+		gid_t new_group = flags & COPYFILE_COPY_GROUP
+			? st->st_gid : -1;
+
+		/* don't try to chown() a symbolic link */
+		if (!S_ISLNK(st->st_mode))
+		{
+			if (chown(path, new_user, new_group))
+				return COPYFILE_ERROR_CHOWN;
+
+			if (result_flags)
+				*result_flags |= flags & COPYFILE_COPY_OWNER;
+		}
+	}
+
+	if (flags & COPYFILE_COPY_MODE)
+	{
+		/* don't try to chmod() a symbolic link */
+		if (!S_ISLNK(st->st_mode))
+		{
+			if (chmod(path, st->st_mode & all_perm_bits))
+				return COPYFILE_ERROR_CHMOD;
+
+			if (result_flags)
+				*result_flags |= COPYFILE_COPY_MODE;
+		}
+	}
+
+	return COPYFILE_NO_ERROR;
 }

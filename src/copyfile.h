@@ -47,6 +47,8 @@ typedef enum
 	COPYFILE_ERROR_MKNOD,
 	COPYFILE_ERROR_SOCKET,
 	COPYFILE_ERROR_BIND,
+	COPYFILE_ERROR_CHOWN,
+	COPYFILE_ERROR_CHMOD,
 	COPYFILE_ERROR_DOMAIN_MAX,
 
 	/**
@@ -78,6 +80,43 @@ typedef enum
 
 	COPYFILE_ERROR_MAX
 } copyfile_error_t;
+
+/**
+ * Constants for metadata copying flags.
+ */
+typedef enum
+{
+	/**
+	 * Copy the user owner of the file.
+	 */
+	COPYFILE_COPY_USER = 0x01,
+	/**
+	 * Copy the group owner the file.
+	 */
+	COPYFILE_COPY_GROUP = 0x02,
+	/**
+	 * Copy both the user and the group owner of the file.
+	 */
+	COPYFILE_COPY_OWNER = COPYFILE_COPY_USER | COPYFILE_COPY_GROUP,
+
+	/**
+	 * Copy mode (permissions + SUID/SGID/VTX bits) to the file.
+	 *
+	 * Note that if this is not used but owner of the file is changed,
+	 * the resulting mode may be affected by the call to chown().
+	 */
+	COPYFILE_COPY_MODE = 0x04,
+
+	/**
+	 * Copy all supported stat() metadata of a file.
+	 */
+	COPYFILE_COPY_STAT = COPYFILE_COPY_OWNER | COPYFILE_COPY_MODE,
+
+	/**
+	 * Mask of the valid values.
+	 */
+	COPYFILE_MASK = 0x07
+} copyfile_metadata_flag_t;
 
 /**
  * An uniform type for callback progress information.
@@ -311,5 +350,39 @@ copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
 copyfile_error_t copyfile_copy_file(const char* source,
 		const char* dest, const struct stat* st,
 		copyfile_callback_t callback, void* callback_data);
+
+/**
+ * Set stat() metadata for a given file.
+ *
+ * The new metadata should be passed as @st. It must not be NULL. This
+ * function assumes that the metadata is exactly fit for the new file,
+ * including the file type. If @dest is of other type, incorrect
+ * behavior may occur (e.g. if @dest is a symbolic link and @st contains
+ * information about a regular file, the symbolic link target
+ * permissions may be modified instead).
+ *
+ * The @flags parameter specifies which properties are to be modified.
+ * In order to copy all the stat() metadata, pass COPYFILE_COPY_STAT.
+ * For more fine-grained control, see the description
+ * of copyfile_metadata_flag_t.
+ *
+ * If @result_flags is not NULL, the bit-field pointed by it will
+ * contain a copy of flags explaining which operations were done
+ * successfully (it will be reset to zero first). It will be equal
+ * to @flags if all changes were done successfully. If the operation is
+ * aborted due to an error, it will state which changes were done
+ * before the error. If some of the changes were unsupported,
+ * the relevant flags will be unset.
+ *
+ * This function does not provide a fine-grained error reporting.
+ * On the first major failure, it will abort, possibly having modified
+ * the metadata partially. Unsupported operation errors will be ignored.
+ *
+ * Returns 0 on success, an error otherwise. errno will hold the system
+ * error code.
+ */
+copyfile_error_t copyfile_set_stat(const char* path,
+		const struct stat* st, unsigned int flags,
+		unsigned int* result_flags);
 
 #endif /*COPYFILE_H*/
