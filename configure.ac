@@ -4,9 +4,9 @@ AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.6 foreign dist-bzip2 subdir-objects])
 
 AC_PROG_CC([c99 cc])
+AC_USE_SYSTEM_EXTENSIONS
 LT_INIT([disable-static])
 
-AC_USE_SYSTEM_EXTENSIONS
 AC_CHECK_FUNCS([posix_fallocate])
 
 AC_ARG_ENABLE([debug],
