@@ -469,11 +469,19 @@ copyfile_error_t copyfile_set_stat(const char* path,
 
 	if (flags & COPYFILE_COPY_MODE)
 	{
+#ifndef HAVE_FCHMODAT
 		/* don't try to chmod() a symbolic link */
 		if (!S_ISLNK(st->st_mode))
+#endif
 		{
+#ifdef HAVE_FCHMODAT
+			if (fchmodat(AT_FDCWD, path, st->st_mode & all_perm_bits,
+						AT_SYMLINK_NOFOLLOW) && errno != EOPNOTSUPP)
+				return COPYFILE_ERROR_CHMOD;
+#else
 			if (chmod(path, st->st_mode & all_perm_bits))
 				return COPYFILE_ERROR_CHMOD;
+#endif
 
 			if (result_flags)
 				*result_flags |= COPYFILE_COPY_MODE;
