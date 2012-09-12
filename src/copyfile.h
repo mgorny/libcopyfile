@@ -256,6 +256,26 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 		copyfile_callback_t callback, void* callback_data);
 
 /**
+ * Create a special (incopiable) file.
+ *
+ * A new file of type @ftype (stat() 'st_mode & S_IFMT' format)
+ * at location @path. If @path exists already, the call will fail.
+ *
+ * If @ftype is S_IFCHR or S_IFBLK (character or block device),
+ * the @devid parameter should contain the device number. Otherwise, it
+ * can contain any value and will be ignored.
+ *
+ * If @callback is non-NULL, it will be used to report progress and/or
+ * errors. The @callback_data will be passed to it. For more details,
+ * see copyfile_callback_t description.
+ *
+ * Returns 0 on success, an error otherwise. errno will hold the system
+ * error code.
+ */
+copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
+		dev_t devid, copyfile_callback_t callback, void* callback_data);
+
+/**
  * Copy the given file to a new location, preserving its type.
  *
  * If @source is a regular file, the file contents will be copied
@@ -276,6 +296,14 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
  * Please note that if the information was obtained using the stat()
  * function instead and if @source is a symbolic link, the underlying
  * file will be copied instead.
+ *
+ * If @callback is non-NULL, it will be used to report progress and/or
+ * errors. The @callback_data will be passed to it. For more details,
+ * see copyfile_callback_t description.
+ *
+ * If @callback is NULL, default error handling will be used. The EINTR
+ * error will be retried indefinitely, and other errors will cause
+ * immediate failure.
  *
  * Returns 0 on success, an error otherwise. errno will hold the system
  * error code.

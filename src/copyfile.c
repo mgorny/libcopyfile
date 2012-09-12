@@ -311,39 +311,17 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 	}
 }
 
-copyfile_error_t copyfile_copy_file(const char* source,
-		const char* dest, const struct stat* st,
-		copyfile_callback_t callback, void* callback_data)
+copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
+		dev_t devid, copyfile_callback_t callback, void* callback_data)
 {
-	struct stat buf;
-	mode_t ftype;
 	copyfile_progress_t progress;
-
-	if (!st)
-	{
-		if (lstat(source, &buf))
-			return COPYFILE_ERROR_STAT;
-
-		st = &buf;
-	}
-
-	ftype = st->st_mode & S_IFMT;
 
 	switch (ftype)
 	{
-		case S_IFREG:
-			return copyfile_copy_regular(source, dest, st->st_size,
-					callback, callback_data);
-		case S_IFLNK:
-			return copyfile_copy_symlink(source, dest, st->st_size,
-					callback, callback_data);
-
 		case S_IFBLK:
 		case S_IFCHR:
-			progress.device = st->st_rdev;
+			progress.device = devid;
 			break;
-		default:
-			;
 	}
 
 	if (callback && callback(COPYFILE_NO_ERROR, ftype, progress,
@@ -358,16 +336,16 @@ copyfile_error_t copyfile_copy_file(const char* source,
 		switch (ftype)
 		{
 			case S_IFDIR:
-				ret = mkdir(dest, perm_dir);
+				ret = mkdir(path, perm_dir);
 				err = COPYFILE_ERROR_MKDIR;
 				break;
 			case S_IFIFO:
-				ret = mkfifo(dest, perm_file);
+				ret = mkfifo(path, perm_file);
 				err = COPYFILE_ERROR_MKFIFO;
 				break;
 			case S_IFBLK:
 			case S_IFCHR:
-				ret = mknod(dest, ftype | perm_file, st->st_rdev);
+				ret = mknod(path, ftype | perm_file, devid);
 				err = COPYFILE_ERROR_MKNOD;
 				break;
 			case S_IFSOCK:
@@ -375,16 +353,16 @@ copyfile_error_t copyfile_copy_file(const char* source,
 					int fd;
 					struct sockaddr_un addr;
 
-					const size_t dest_size = strlen(dest) + 1;
+					const size_t path_size = strlen(path) + 1;
 
-					if (dest_size > sizeof(addr.sun_path))
+					if (path_size > sizeof(addr.sun_path))
 						return COPYFILE_ERROR_SOCKET_DEST_TOO_LONG;
 
 					fd = socket(AF_UNIX, SOCK_STREAM, 0);
 					if (fd != -1)
 					{
 						addr.sun_family = AF_UNIX;
-						memcpy(addr.sun_path, dest, dest_size);
+						memcpy(addr.sun_path, path, path_size);
 
 						ret = bind(fd, &addr, sizeof(addr));
 						err = COPYFILE_ERROR_BIND;
@@ -418,4 +396,35 @@ copyfile_error_t copyfile_copy_file(const char* source,
 		return COPYFILE_ABORTED;
 
 	return COPYFILE_NO_ERROR;
+}
+
+copyfile_error_t copyfile_copy_file(const char* source,
+		const char* dest, const struct stat* st,
+		copyfile_callback_t callback, void* callback_data)
+{
+	struct stat buf;
+	mode_t ftype;
+
+	if (!st)
+	{
+		if (lstat(source, &buf))
+			return COPYFILE_ERROR_STAT;
+
+		st = &buf;
+	}
+
+	ftype = st->st_mode & S_IFMT;
+
+	switch (ftype)
+	{
+		case S_IFREG:
+			return copyfile_copy_regular(source, dest, st->st_size,
+					callback, callback_data);
+		case S_IFLNK:
+			return copyfile_copy_symlink(source, dest, st->st_size,
+					callback, callback_data);
+		default:
+			return copyfile_create_special(dest, ftype, st->st_rdev,
+					callback, callback_data);
+	}
 }
