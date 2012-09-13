@@ -442,6 +442,8 @@ copyfile_error_t copyfile_set_stat(const char* path,
 {
 	assert(st);
 
+	if (!flags)
+		flags = COPYFILE_COPY_STAT;
 	if (result_flags)
 		*result_flags = 0;
 

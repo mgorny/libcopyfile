@@ -398,9 +398,9 @@ copyfile_error_t copyfile_copy_file(const char* source,
  * permissions may be modified instead).
  *
  * The @flags parameter specifies which properties are to be modified.
- * In order to copy all the stat() metadata, pass COPYFILE_COPY_STAT.
- * For more fine-grained control, see the description
- * of copyfile_metadata_flag_t.
+ * In order to copy all the stat() metadata, pass 0 (which will imply
+ * COPYFILE_COPY_STAT).  For more fine-grained control, see
+ * the description of copyfile_metadata_flag_t.
  *
  * If @result_flags is not NULL, the bit-field pointed by it will
  * contain a copy of flags explaining which operations were done
