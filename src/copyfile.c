@@ -551,131 +551,132 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 
 	/* sadly, we can't use attr_copy_file() because it doesn't provide
 	 * any good way to distinguish between read and write errors. */
-
-	char list_buf[COPYFILE_BUFFER_SIZE];
-	char data_buf[COPYFILE_BUFFER_SIZE];
-	const ssize_t initial_buf_size = sizeof(list_buf);
-
-	char* list_bufp = list_buf;
-	ssize_t list_buf_size = initial_buf_size;
-
-	char* data_bufp = data_buf;
-	ssize_t data_buf_size = initial_buf_size;
-
-	ssize_t list_len;
-
-	const char* n;
-
-	copyfile_error_t ret = COPYFILE_NO_ERROR;
-	int saved_errno;
-
-	list_len = llistxattr(source, 0, 0);
-	if (list_len == -1)
 	{
-		/* if source fs doesn't support them, it doesn't have them. */
-		if (errno == ENOTSUP)
-			return COPYFILE_NO_ERROR;
-		else
-			return COPYFILE_ERROR_XATTR_LIST;
-	}
+		char list_buf[COPYFILE_BUFFER_SIZE];
+		char data_buf[COPYFILE_BUFFER_SIZE];
+		const ssize_t initial_buf_size = sizeof(list_buf);
 
-	if (list_len > list_buf_size)
-	{
-		list_bufp = malloc(list_len);
-		if (!list_bufp)
-			return COPYFILE_ERROR_MALLOC;
-		list_buf_size = list_len;
-	}
+		char* list_bufp = list_buf;
+		ssize_t list_buf_size = initial_buf_size;
 
-	list_len = llistxattr(source, list_bufp, list_buf_size);
-	if (list_len == -1)
-	{
-		if (list_buf_size > initial_buf_size)
-			free(list_bufp);
+		char* data_bufp = data_buf;
+		ssize_t data_buf_size = initial_buf_size;
 
-		return COPYFILE_ERROR_XATTR_LIST;
-	}
+		ssize_t list_len;
 
-	for (n = list_bufp; n < &list_bufp[list_len]; n = strchr(n, 0) + 1)
-	{
-		ssize_t data_len;
-		unsigned int special_bit = 0;
+		const char* n;
 
-		if (!strcmp(n, "system.posix_acl_access")
-				|| !strcmp(n, "system.posix_acl_default"))
-			special_bit = COPYFILE_COPY_ACL;
+		copyfile_error_t ret = COPYFILE_NO_ERROR;
+		int saved_errno;
 
-		/* omit special flags if not requested */
-		if (special_bit && !(flags & special_bit))
-			continue;
-
-		data_len = lgetxattr(source, n, 0, 0);
-		if (data_len == -1)
+		list_len = llistxattr(source, 0, 0);
+		if (list_len == -1)
 		{
-			/* return the first error
-			 * but try to copy the remaining attributes first,
-			 * in case user ignored errors */
-			if (!ret)
-			{
-				ret = COPYFILE_ERROR_XATTR_GET;
-				saved_errno = errno;
-			}
-			continue;
+			/* if source fs doesn't support them, it doesn't have them. */
+			if (errno == ENOTSUP)
+				return COPYFILE_NO_ERROR;
+			else
+				return COPYFILE_ERROR_XATTR_LIST;
 		}
 
-		if (data_len > data_buf_size)
+		if (list_len > list_buf_size)
 		{
-			char* new_data_bufp = realloc(data_bufp, data_len);
-			if (!new_data_bufp)
+			list_bufp = malloc(list_len);
+			if (!list_bufp)
+				return COPYFILE_ERROR_MALLOC;
+			list_buf_size = list_len;
+		}
+
+		list_len = llistxattr(source, list_bufp, list_buf_size);
+		if (list_len == -1)
+		{
+			if (list_buf_size > initial_buf_size)
+				free(list_bufp);
+
+			return COPYFILE_ERROR_XATTR_LIST;
+		}
+
+		for (n = list_bufp; n < &list_bufp[list_len]; n = strchr(n, 0) + 1)
+		{
+			ssize_t data_len;
+			unsigned int special_bit = 0;
+
+			if (!strcmp(n, "system.posix_acl_access")
+					|| !strcmp(n, "system.posix_acl_default"))
+				special_bit = COPYFILE_COPY_ACL;
+
+			/* omit special flags if not requested */
+			if (special_bit && !(flags & special_bit))
+				continue;
+
+			data_len = lgetxattr(source, n, 0, 0);
+			if (data_len == -1)
 			{
+				/* return the first error
+				 * but try to copy the remaining attributes first,
+				 * in case user ignored errors */
 				if (!ret)
 				{
-					ret = COPYFILE_ERROR_MALLOC;
+					ret = COPYFILE_ERROR_XATTR_GET;
 					saved_errno = errno;
 				}
 				continue;
 			}
-			data_bufp = new_data_bufp;
-			data_buf_size = data_len;
-		}
 
-		data_len = lgetxattr(source, n, data_bufp, data_buf_size);
-		if (data_len == -1)
-		{
-			if (!ret)
+			if (data_len > data_buf_size)
 			{
-				ret = COPYFILE_ERROR_XATTR_GET;
-				saved_errno = errno;
-			}
-			continue;
-		}
-
-		if (lsetxattr(dest, n, data_bufp, data_len, 0))
-		{
-			if (!ret)
-			{
-				ret = COPYFILE_ERROR_XATTR_SET;
-				saved_errno = errno;
+				char* new_data_bufp = realloc(data_bufp, data_len);
+				if (!new_data_bufp)
+				{
+					if (!ret)
+					{
+						ret = COPYFILE_ERROR_MALLOC;
+						saved_errno = errno;
+					}
+					continue;
+				}
+				data_bufp = new_data_bufp;
+				data_buf_size = data_len;
 			}
 
-			/* further calls will fail as well */
-			if (errno == ENOTSUP)
-				break;
+			data_len = lgetxattr(source, n, data_bufp, data_buf_size);
+			if (data_len == -1)
+			{
+				if (!ret)
+				{
+					ret = COPYFILE_ERROR_XATTR_GET;
+					saved_errno = errno;
+				}
+				continue;
+			}
+
+			if (lsetxattr(dest, n, data_bufp, data_len, 0))
+			{
+				if (!ret)
+				{
+					ret = COPYFILE_ERROR_XATTR_SET;
+					saved_errno = errno;
+				}
+
+				/* further calls will fail as well */
+				if (errno == ENOTSUP)
+					break;
+			}
+			else if (special_bit && result_flags)
+				*result_flags |= special_bit;
 		}
-		else if (special_bit && result_flags)
-			*result_flags |= special_bit;
+
+		if (list_buf_size > initial_buf_size)
+			free(list_bufp);
+		if (data_buf_size > initial_buf_size)
+			free(data_bufp);
+
+		if (ret)
+			errno = saved_errno;
+		else if (result_flags)
+			*result_flags |= COPYFILE_COPY_XATTR;
+		return ret;
 	}
-
-	if (list_buf_size > initial_buf_size)
-		free(list_bufp);
-	if (data_buf_size > initial_buf_size)
-		free(data_bufp);
-
-	if (ret)
-		errno = saved_errno;
-	else if (result_flags)
-		*result_flags |= COPYFILE_COPY_XATTR;
-	return ret;
 #endif
 
 	return COPYFILE_ERROR_UNSUPPORTED;
