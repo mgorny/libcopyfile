@@ -143,9 +143,29 @@ typedef enum
 		| COPYFILE_COPY_TIMES,
 
 	/**
+	 * Copy regular extended attributes.
+	 *
+	 * This will omit special attributes, e.g. POSIX ACLs.
+	 */
+	COPYFILE_COPY_XATTR = 0x20,
+	/**
+	 * Copy access control lists.
+	 *
+	 * Note that this usually implies copying mode as well.
+	 */
+	COPYFILE_COPY_ACL = 0x40,
+
+	/**
+	 * Copy all supported extended attributes.
+	 *
+	 * This implies copying special xattrs like ACLs as well.
+	 */
+	COPYFILE_COPY_XATTR_ALL = COPYFILE_COPY_XATTR | COPYFILE_COPY_ACL,
+
+	/**
 	 * Mask of the valid values.
 	 */
-	COPYFILE_MASK = 0x1f
+	COPYFILE_MASK = 0x7f
 } copyfile_metadata_flag_t;
 
 /**
@@ -435,10 +455,23 @@ copyfile_error_t copyfile_set_stat(const char* path,
  * of an error other than ENOTSUP (xattr unsupported on destination
  * filesystem), it will still try to copy the remaining attributes.
  *
+ * The @flags parameter specifies which properties are to be copied.
+ * In order to copy all the extended attributes (including special ones,
+ * like ACLs), pass 0 (which will imply COPYFILE_COPY_XATTR_ALL).
+ * For more fine-grained control, see the description of
+ * copyfile_metadata_flag_t.
+ *
+ * If @result_flags is not NULL, the bit-field pointed by it will
+ * contain a copy of flags explaining which operations were done
+ * successfully (it will be reset to zero first). Most importantly,
+ * the COPYFILE_COPY_ACL bit will be set if ACLs were copied as a side-
+ * -effect of copying flags.
+ *
  * Returns 0 on success, an error otherwise. errno will hold the system
  * error code.
  */
 copyfile_error_t copyfile_copy_xattr(const char* source,
-		const char* dest);
+		const char* dest, unsigned int flags,
+		unsigned int* result_flags);
 
 #endif /*COPYFILE_H*/

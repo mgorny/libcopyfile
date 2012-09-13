@@ -539,9 +539,16 @@ copyfile_error_t copyfile_set_stat(const char* path,
 }
 
 copyfile_error_t copyfile_copy_xattr(const char* source,
-		const char* dest)
+		const char* dest, unsigned int flags,
+		unsigned int* result_flags)
 {
+	if (result_flags)
+		*result_flags = 0;
+
 #ifdef HAVE_LIBATTR
+	if (!flags)
+		flags = COPYFILE_COPY_XATTR_ALL;
+
 	/* sadly, we can't use attr_copy_file() because it doesn't provide
 	 * any good way to distinguish between read and write errors. */
 
@@ -592,6 +599,15 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 	for (n = list_bufp; n < &list_bufp[list_len]; n = strchr(n, 0) + 1)
 	{
 		ssize_t data_len;
+		unsigned int special_bit = 0;
+
+		if (!strcmp(n, "system.posix_acl_access")
+				|| !strcmp(n, "system.posix_acl_default"))
+			special_bit = COPYFILE_COPY_ACL;
+
+		/* omit special flags if not requested */
+		if (special_bit && !(flags & special_bit))
+			continue;
 
 		data_len = lgetxattr(source, n, 0, 0);
 		if (data_len == -1)
@@ -638,6 +654,8 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 			if (errno == ENOTSUP)
 				break;
 		}
+		else if (special_bit && result_flags)
+			*result_flags |= special_bit;
 	}
 
 	if (list_buf_size > initial_buf_size)
@@ -647,6 +665,8 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 
 	if (ret)
 		errno = saved_errno;
+	else if (result_flags)
+		*result_flags |= COPYFILE_COPY_XATTR;
 	return ret;
 #endif
 
