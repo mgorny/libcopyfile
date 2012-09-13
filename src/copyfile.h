@@ -163,9 +163,10 @@ typedef enum
 	COPYFILE_COPY_XATTR_ALL = COPYFILE_COPY_XATTR | COPYFILE_COPY_ACL,
 
 	/**
-	 * Mask of the valid values.
+	 * All metadata.
 	 */
-	COPYFILE_MASK = 0x7f
+	COPYFILE_COPY_ALL_METADATA = COPYFILE_COPY_STAT
+		| COPYFILE_COPY_XATTR_ALL
 } copyfile_metadata_flag_t;
 
 /**
@@ -484,5 +485,35 @@ copyfile_error_t copyfile_set_stat(const char* path,
 copyfile_error_t copyfile_copy_xattr(const char* source,
 		const char* dest, unsigned int flags,
 		unsigned int* result_flags);
+
+/**
+ * Copy common file metadata.
+ *
+ * This involves copying basic stat() metadata, extended attributes
+ * and ACLs.
+ *
+ * If lstat() result for the source file is available, a pointer to it
+ * should be passed as @st. Otherwise, @st should be NULL.
+ *
+ * The @flags parameter can specify which information should be copied.
+ * To copy all available metadata, specify 0 (which results in
+ * COPYFILE_COPY_ALL_METADATA). For a more fine-grained choice, take
+ * a look at description of copyfile_metadata_flag_t.
+ *
+ * If @result_flags is not NULL, the bit-field pointed by it will
+ * contain a copy of flags explaining which operations were done
+ * successfully (it will be reset to zero first).
+ *
+ * Note that some of the minor errors are not considered as a reason for
+ * failure exit, and instead are only reported through unset bits
+ * in @result_flags. This includes e.g. unsupported extended attributes
+ * in destination.
+ *
+ * Returns 0 on success, an error otherwise. errno will hold the system
+ * error code.
+ */
+copyfile_error_t copyfile_copy_metadata(const char* source,
+		const char* dest, const struct stat* st,
+		unsigned int flags, unsigned int* result_flags);
 
 #endif /*COPYFILE_H*/
