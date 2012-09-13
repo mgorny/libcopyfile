@@ -625,9 +625,17 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 
 		if (data_len > data_buf_size)
 		{
-			data_bufp = malloc(data_len);
-			if (!data_bufp)
-				return COPYFILE_ERROR_MALLOC;
+			char* new_data_bufp = realloc(data_bufp, data_len);
+			if (!new_data_bufp)
+			{
+				if (!ret)
+				{
+					ret = COPYFILE_ERROR_MALLOC;
+					saved_errno = errno;
+				}
+				continue;
+			}
+			data_bufp = new_data_bufp;
 			data_buf_size = data_len;
 		}
 
