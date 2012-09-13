@@ -280,6 +280,17 @@ typedef int (*copyfile_callback_t)(copyfile_error_t state, mode_t type,
  * The streams will not be closed. In case of an error, the current
  * offset on both streams is undefined.
  *
+ * The @offset_store can be used as a variable holding current offset
+ * of stream copy. If it is NULL (0), the function assumes the starting
+ * offset is 0. If it is non-NULL, the value of the pointed variable is
+ * used as the starting offset. The offset does not affect copying, it
+ * is only incremented on writes and passed through to the callback.
+ *
+ * Additionally, if @offset_store is non-NULL, the final offset value
+ * will be written back to the variable on exit. This could be used to
+ * obtain the amount of data written in a single call or to support
+ * progress reporting on resumed copy.
+ *
  * The @expected_size can hold the expected size of the file,
  * or otherwise be 0. It will be only passed through to the callback.
  *
@@ -295,8 +306,8 @@ typedef int (*copyfile_callback_t)(copyfile_error_t state, mode_t type,
  * error code.
  */
 copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
-		off_t expected_size, copyfile_callback_t callback,
-		void* callback_data);
+		off_t* offset_store, off_t expected_size,
+		copyfile_callback_t callback, void* callback_data);
 
 /**
  * Copy the contents of a regular file onto a new file.

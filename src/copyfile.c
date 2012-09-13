@@ -43,15 +43,15 @@ static const mode_t all_perm_bits = perm_dir
 		| S_ISUID | S_ISGID | S_ISVTX;
 
 copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
-		off_t expected_size, copyfile_callback_t callback,
-		void* callback_data)
+		off_t* offset_store, off_t expected_size,
+		copyfile_callback_t callback, void* callback_data)
 {
 	char buf[COPYFILE_BUFFER_SIZE];
 
 	int opcount = 0;
 	copyfile_progress_t progress;
 
-	progress.data.offset = 0;
+	progress.data.offset = offset_store ? *offset_store : 0;
 	progress.data.size = expected_size;
 
 	while (1)
@@ -64,7 +64,11 @@ copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 			if (++opcount >= COPYFILE_CALLBACK_OPCOUNT)
 			{
 				if (callback(COPYFILE_NO_ERROR, S_IFREG, progress, callback_data))
+				{
+					if (offset_store)
+						*offset_store = progress.data.offset;
 					return COPYFILE_ABORTED;
+				}
 				opcount = 0;
 			}
 		}
@@ -79,12 +83,14 @@ copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 					: errno == EINTR)
 				continue;
 			else
+			{
+				if (offset_store)
+					*offset_store = progress.data.offset;
 				return err;
+			}
 		}
 		else if (rd == 0)
 			break;
-
-		progress.data.offset += rd;
 
 		while (rd > 0)
 		{
@@ -98,16 +104,24 @@ copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 						: errno == EINTR)
 					continue;
 				else
+				{
+					if (offset_store)
+						*offset_store = progress.data.offset;
 					return err;
+				}
 			}
 			else
 			{
 				rd -= wr;
 				bufp += wr;
+
+				progress.data.offset += wr;
 			}
 		}
 	}
 
+	if (offset_store)
+		*offset_store = progress.data.offset;
 	if (callback && callback(COPYFILE_EOF, S_IFREG, progress, callback_data))
 		return COPYFILE_ABORTED;
 	return COPYFILE_NO_ERROR;
@@ -143,27 +157,19 @@ copyfile_error_t copyfile_copy_regular(const char* source,
 #endif
 
 	{
+		off_t offset = 0;
 		copyfile_error_t ret = copyfile_copy_stream(fd_in, fd_out,
-				expected_size, callback, callback_data);
+				&offset, expected_size, callback, callback_data);
 		int hold_errno = errno;
 
 #ifdef HAVE_POSIX_FALLOCATE
 		if (preallocated)
 		{
-			off_t pos = lseek(fd_out, 0, SEEK_CUR);
-			if (pos != -1)
-			{
-				int trunc_ret = ftruncate(fd_out, pos);
-				if (trunc_ret && !ret)
-				{
-					ret = COPYFILE_ERROR_TRUNCATE;
-					hold_errno = trunc_ret;
-				}
-			}
-			else if (!ret)
+			int trunc_ret = ftruncate(fd_out, offset);
+			if (trunc_ret && !ret)
 			{
 				ret = COPYFILE_ERROR_TRUNCATE;
-				hold_errno = errno;
+				hold_errno = trunc_ret;
 			}
 		}
 #endif
