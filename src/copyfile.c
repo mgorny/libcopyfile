@@ -487,16 +487,29 @@ copyfile_error_t copyfile_set_stat(const char* path,
 #endif
 		{
 #ifdef HAVE_FCHMODAT
-			if (fchmodat(AT_FDCWD, path, st->st_mode & all_perm_bits,
-						AT_SYMLINK_NOFOLLOW) && errno != EOPNOTSUPP)
-				return COPYFILE_ERROR_CHMOD;
-#else
-			if (chmod(path, st->st_mode & all_perm_bits))
-				return COPYFILE_ERROR_CHMOD;
-#endif
 
-			if (result_flags)
-				*result_flags |= COPYFILE_COPY_MODE;
+			int flags = S_ISLNK(st->st_mode) ? AT_SYMLINK_NOFOLLOW : 0;
+
+			if (!fchmodat(AT_FDCWD, path, st->st_mode & all_perm_bits,
+						flags))
+			{
+				if (result_flags)
+					*result_flags |= COPYFILE_COPY_MODE;
+			}
+			else if (errno != EOPNOTSUPP)
+				return COPYFILE_ERROR_CHMOD;
+
+#else /*!HAVE_FCHMODAT*/
+
+			if (!chmod(path, st->st_mode & all_perm_bits))
+			{
+				if (result_flags)
+					*result_flags |= COPYFILE_COPY_MODE;
+			}
+			else
+				return COPYFILE_ERROR_CHMOD;
+
+#endif
 		}
 	}
 
