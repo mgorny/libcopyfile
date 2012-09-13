@@ -622,9 +622,10 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 			ssize_t data_len;
 			unsigned int special_bit = 0;
 
-			if (!strcmp(n, "system.posix_acl_access")
-					|| !strcmp(n, "system.posix_acl_default"))
-				special_bit = COPYFILE_COPY_ACL;
+			if (!strcmp(n, "system.posix_acl_access"))
+				special_bit = COPYFILE_COPY_ACL_ACCESS;
+			else if (!strcmp(n, "system.posix_acl_default"))
+				special_bit = COPYFILE_COPY_ACL_DEFAULT;
 
 			/* omit special flags if not requested */
 			if (special_bit && !(flags & special_bit))

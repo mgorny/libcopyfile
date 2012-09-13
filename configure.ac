@@ -18,7 +18,7 @@ AC_ARG_ENABLE([libattr],
 
 AS_IF([test x"$enable_libattr" != x"no"],
 [
-	AC_CHECK_LIB([attr], [attr_copy_file])
+	AC_CHECK_LIB([attr], [getxattr])
 ])
 
 AS_IF([test x"$enable_debug" = x"yes"],
