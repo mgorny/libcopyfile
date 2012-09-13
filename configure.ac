@@ -12,7 +12,17 @@ AC_CHECK_FUNCS([fchmodat lchown posix_fallocate utimensat])
 AC_ARG_ENABLE([debug],
 	AS_HELP_STRING([--enable-debug], [Enable stderr debug]))
 
-AS_IF([test "x$enable_debug" = "xyes"], [
+AC_ARG_ENABLE([libattr],
+	AS_HELP_STRING([--disable-libattr],
+		[Disable use of libattr (default: autodetect)]))
+
+AS_IF([test x"$enable_libattr" != x"no"],
+[
+	AC_CHECK_LIB([attr], [attr_copy_file])
+])
+
+AS_IF([test x"$enable_debug" = x"yes"],
+[
 	AC_DEFINE([ENABLE_DEBUG], [1], [Enable debugging code])
 ])
 

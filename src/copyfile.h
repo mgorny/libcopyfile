@@ -50,6 +50,9 @@ typedef enum
 	COPYFILE_ERROR_CHOWN,
 	COPYFILE_ERROR_CHMOD,
 	COPYFILE_ERROR_UTIME,
+	COPYFILE_ERROR_XATTR_LIST,
+	COPYFILE_ERROR_XATTR_GET,
+	COPYFILE_ERROR_XATTR_SET,
 	COPYFILE_ERROR_DOMAIN_MAX,
 
 	/**
@@ -69,6 +72,10 @@ typedef enum
 	 * can handle. There is probably nothing we can do about it.
 	 */
 	COPYFILE_ERROR_SOCKET_DEST_TOO_LONG,
+	/**
+	 * A particular feature is unsupported or the support is disabled.
+	 */
+	COPYFILE_ERROR_UNSUPPORTED,
 
 	/**
 	 * The operation was aborted by a callback function.
@@ -413,5 +420,25 @@ copyfile_error_t copyfile_copy_file(const char* source,
 copyfile_error_t copyfile_set_stat(const char* path,
 		const struct stat* st, unsigned int flags,
 		unsigned int* result_flags);
+
+/**
+ * Copy extended attributes of a file.
+ *
+ * If extended attribute support is disabled, it will return
+ * COPYFILE_ERROR_UNSUPPORTED. If source file does not support extended
+ * attributes, it will return COPYFILE_NO_ERROR (since there's nothing
+ * to copy).
+ *
+ * Otherwise, it will try hard to copy all the extended attributes.
+ * The call will return COPYFILE_NO_ERROR if all attributes were copied
+ * correctly, or the first error which occurs. Note that in case
+ * of an error other than ENOTSUP (xattr unsupported on destination
+ * filesystem), it will still try to copy the remaining attributes.
+ *
+ * Returns 0 on success, an error otherwise. errno will hold the system
+ * error code.
+ */
+copyfile_error_t copyfile_copy_xattr(const char* source,
+		const char* dest);
 
 #endif /*COPYFILE_H*/
