@@ -575,6 +575,7 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 
 	/* sadly, we can't use attr_copy_file() because it doesn't provide
 	 * any good way to distinguish between read and write errors. */
+	if (flags & COPYFILE_COPY_XATTR_ALL)
 	{
 		char list_buf[COPYFILE_BUFFER_SIZE];
 		char data_buf[COPYFILE_BUFFER_SIZE];
@@ -702,7 +703,7 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 			*result_flags |= COPYFILE_COPY_XATTR;
 		return ret;
 	}
-#endif
+#endif /*HAVE_LIBATTR*/
 
 	return COPYFILE_ERROR_UNSUPPORTED;
 }
