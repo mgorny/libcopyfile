@@ -24,6 +24,9 @@
 #ifdef HAVE_LIBATTR
 #	include <attr/xattr.h>
 #endif
+#ifdef HAVE_LIBACL
+#	include <sys/acl.h>
+#endif
 
 #ifndef COPYFILE_BUFFER_SIZE
 #	define COPYFILE_BUFFER_SIZE 4096
@@ -704,6 +707,84 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 	return COPYFILE_ERROR_UNSUPPORTED;
 }
 
+#ifdef HAVE_LIBACL
+static const acl_type_t acl_types[] =
+{
+	ACL_TYPE_ACCESS,
+	ACL_TYPE_DEFAULT
+};
+
+static const unsigned int acl_flags[] =
+{
+	COPYFILE_COPY_ACL_ACCESS,
+	COPYFILE_COPY_ACL_DEFAULT
+};
+#endif /*HAVE_LIBACL*/
+
+copyfile_error_t copyfile_copy_acl(const char* source,
+		const char* dest, unsigned int flags,
+		unsigned int* result_flags)
+{
+	if (result_flags)
+		*result_flags = 0;
+
+#ifdef HAVE_LIBACL
+	if (!flags)
+		flags = COPYFILE_COPY_ACL;
+
+	{
+		copyfile_error_t ret = COPYFILE_NO_ERROR;
+		int saved_errno;
+
+		int i;
+
+		for (i = 0; i < 2; ++i)
+		{
+			if (flags & acl_flags[i])
+			{
+				acl_t acl;
+
+				acl = acl_get_file(source, acl_types[i]);
+				if (acl)
+				{
+					if (!acl_set_file(dest, acl_types[i], acl))
+					{
+						if (result_flags)
+							*result_flags |= acl_flags[i];
+					}
+					else if (!ret)
+					{
+						ret = COPYFILE_ERROR_ACL_SET;
+						saved_errno = errno;
+					}
+
+					acl_free(acl);
+				}
+				else
+				{
+					/* ACLs not supported? fine, nothing to copy. */
+					if (errno == EOPNOTSUPP)
+						return COPYFILE_NO_ERROR;
+					else if (i > 0 && errno == EACCES)
+						/* ACL_TYPE_DEFAULT on non-dir, likely */;
+					else if (!ret)
+					{
+						ret = COPYFILE_ERROR_ACL_GET;
+						saved_errno = errno;
+					}
+				}
+			}
+		}
+
+		if (ret)
+			errno = saved_errno;
+		return ret;
+	}
+#endif /*HAVE_LIBACL*/
+
+	return COPYFILE_ERROR_UNSUPPORTED;
+}
+
 copyfile_error_t copyfile_copy_metadata(const char* source,
 		const char* dest, const struct stat* st,
 		unsigned int flags, unsigned int* result_flags)
@@ -753,7 +834,14 @@ copyfile_error_t copyfile_copy_metadata(const char* source,
 			*result_flags |= done;
 	}
 
-	/* XXX: ACLs */
+	if (flags & COPYFILE_COPY_ACL)
+	{
+		copyfile_copy_acl(source, dest, flags, &done);
+
+		flags &= ~done;
+		if (result_flags)
+			*result_flags |= done;
+	}
 
 	if (flags & COPYFILE_COPY_STAT)
 	{

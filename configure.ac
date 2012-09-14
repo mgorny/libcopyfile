@@ -12,6 +12,15 @@ AC_CHECK_FUNCS([fchmodat lchown posix_fallocate utimensat])
 AC_ARG_ENABLE([debug],
 	AS_HELP_STRING([--enable-debug], [Enable stderr debug]))
 
+AC_ARG_ENABLE([libacl],
+	AS_HELP_STRING([--disable-libacl],
+		[Disable use of libacl (default: autodetect)]))
+
+AS_IF([test x"$enable_libacl" != x"no"],
+[
+	AC_CHECK_LIB([acl], [acl_get_file])
+])
+
 AC_ARG_ENABLE([libattr],
 	AS_HELP_STRING([--disable-libattr],
 		[Disable use of libattr (default: autodetect)]))

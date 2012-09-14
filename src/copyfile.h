@@ -53,6 +53,8 @@ typedef enum
 	COPYFILE_ERROR_XATTR_LIST,
 	COPYFILE_ERROR_XATTR_GET,
 	COPYFILE_ERROR_XATTR_SET,
+	COPYFILE_ERROR_ACL_GET,
+	COPYFILE_ERROR_ACL_SET,
 	COPYFILE_ERROR_DOMAIN_MAX,
 
 	/**
@@ -491,6 +493,29 @@ copyfile_error_t copyfile_set_stat(const char* path,
  * error code.
  */
 copyfile_error_t copyfile_copy_xattr(const char* source,
+		const char* dest, unsigned int flags,
+		unsigned int* result_flags);
+
+/**
+ * Copy ACLs of a file.
+ *
+ * If the ACL support is disabled, it will return
+ * COPYFILE_ERROR_UNSUPPORTED. If source file does not support ACLs, it
+ * will return COPYFILE_NO_ERROR (since there's nothing to copy).
+ *
+ * The @flags parameter specifies which ACLs are to be copied.
+ * In order to copy all the ACL types, pass 0 (which will imply
+ * COPYFILE_COPY_ACL).  For more fine-grained control, see the
+ * description of copyfile_metadata_flag_t.
+ *
+ * If @result_flags is not NULL, the bit-field pointed by it will
+ * contain a copy of flags explaining which ACL types were copied
+ * successfully (it will be reset to zero first).
+ *
+ * Returns 0 on success, an error otherwise. errno will hold the system
+ * error code.
+ */
+copyfile_error_t copyfile_copy_acl(const char* source,
 		const char* dest, unsigned int flags,
 		unsigned int* result_flags);
 
