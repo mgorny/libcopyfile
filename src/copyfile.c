@@ -723,8 +723,8 @@ static const unsigned int acl_flags[] =
 #endif /*HAVE_LIBACL*/
 
 copyfile_error_t copyfile_copy_acl(const char* source,
-		const char* dest, unsigned int flags,
-		unsigned int* result_flags)
+		const char* dest, const struct stat* st,
+		unsigned int flags, unsigned int* result_flags)
 {
 	if (result_flags)
 		*result_flags = 0;
@@ -733,11 +733,29 @@ copyfile_error_t copyfile_copy_acl(const char* source,
 	if (!flags)
 		flags = COPYFILE_COPY_ACL;
 
+	if (flags & COPYFILE_COPY_ACL)
 	{
 		copyfile_error_t ret = COPYFILE_NO_ERROR;
 		int saved_errno;
 
 		int i;
+
+#ifndef HAVE_ACL_GET_LINK_NP
+		{
+			struct stat buf;
+
+			if (!st)
+			{
+				if (lstat(source, &buf))
+					return COPYFILE_ERROR_STAT;
+
+				st = &buf;
+			}
+
+			if (S_ISLNK(st->st_mode))
+				return COPYFILE_NO_ERROR;
+		}
+#endif /*!HAVE_ACL_GET_LINK_NP*/
 
 		for (i = 0; i < 2; ++i)
 		{
@@ -848,7 +866,7 @@ copyfile_error_t copyfile_copy_metadata(const char* source,
 
 	if (flags & COPYFILE_COPY_ACL)
 	{
-		copyfile_copy_acl(source, dest, flags, &done);
+		copyfile_copy_acl(source, dest, st, flags, &done);
 
 		flags &= ~done;
 		if (result_flags)

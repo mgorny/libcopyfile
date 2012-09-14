@@ -516,8 +516,8 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
  * error code.
  */
 copyfile_error_t copyfile_copy_acl(const char* source,
-		const char* dest, unsigned int flags,
-		unsigned int* result_flags);
+		const char* dest, const struct stat* st,
+		unsigned int flags, unsigned int* result_flags);
 
 /**
  * Copy common file metadata.
