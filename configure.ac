@@ -7,8 +7,6 @@ AC_PROG_CC([c99 cc])
 AC_USE_SYSTEM_EXTENSIONS
 LT_INIT([disable-static])
 
-AC_CHECK_FUNCS([fchmodat lchown posix_fallocate utimensat])
-
 AC_ARG_ENABLE([debug],
 	AS_HELP_STRING([--enable-debug], [Enable stderr debug]))
 
@@ -29,6 +27,8 @@ AS_IF([test x"$enable_libattr" != x"no"],
 [
 	AC_CHECK_LIB([attr], [getxattr])
 ])
+
+AC_CHECK_FUNCS([acl_get_link_np fchmodat lchown posix_fallocate utimensat])
 
 AS_IF([test x"$enable_debug" = x"yes"],
 [

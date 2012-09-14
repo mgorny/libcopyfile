@@ -745,10 +745,21 @@ copyfile_error_t copyfile_copy_acl(const char* source,
 			{
 				acl_t acl;
 
+#ifdef HAVE_ACL_GET_LINK_NP
+				acl = acl_get_link_np(source, acl_types[i]);
+#else
 				acl = acl_get_file(source, acl_types[i]);
+#endif
 				if (acl)
 				{
-					if (!acl_set_file(dest, acl_types[i], acl))
+					int aclret;
+
+#ifdef HAVE_ACL_GET_LINK_NP
+					aclret = acl_set_link_np(dest, acl_types[i], acl);
+#else
+					aclret = acl_set_file(dest, acl_types[i], acl);
+#endif
+					if (!aclret)
 					{
 						if (result_flags)
 							*result_flags |= acl_flags[i];
