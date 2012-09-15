@@ -36,6 +36,19 @@ AS_IF([test x"$enable_libattr" != x"no"],
 	])
 ])
 
+AC_ARG_ENABLE([libcap],
+	AS_HELP_STRING([--disable-libcap],
+		[Disable use of libcap (default: autodetect)]))
+
+AS_IF([test x"$enable_libcap" != x"no"],
+[
+	AC_SEARCH_LIBS([cap_get_file], [cap],
+	[
+		AC_DEFINE([HAVE_LIBCAP], [1],
+				[Define to 1 if you have cap_get_file() and friends.])
+	])
+])
+
 AC_CHECK_FUNCS([acl_get_link_np fchmodat lchown posix_fallocate utimensat])
 
 AS_IF([test x"$enable_debug" = x"yes"],

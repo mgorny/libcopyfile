@@ -30,6 +30,9 @@
 #ifdef HAVE_LIBACL
 #	include <sys/acl.h>
 #endif
+#ifdef HAVE_LIBCAP
+#	include <sys/capability.h>
+#endif
 
 #ifndef COPYFILE_BUFFER_SIZE
 #	define COPYFILE_BUFFER_SIZE 4096
@@ -843,6 +846,46 @@ copyfile_error_t copyfile_copy_acl(const char* source,
 	return COPYFILE_ERROR_UNSUPPORTED;
 }
 
+copyfile_error_t copyfile_copy_cap(const char* source,
+		const char* dest, const struct stat* st,
+		unsigned int flags, unsigned int* result_flags)
+{
+	if (result_flags)
+		*result_flags = 0;
+
+#ifdef HAVE_LIBCAP
+	if (!flags)
+		flags = COPYFILE_COPY_CAP;
+
+	if (flags & COPYFILE_COPY_CAP)
+	{
+		cap_t cap = 0;
+
+		/* ENODATA - empty caps
+		 * ENOTSUP - caps not supported */
+		cap = cap_get_file(source);
+		if (!cap && errno != ENODATA)
+		{
+			if (errno == ENOTSUP)
+				return COPYFILE_NO_ERROR;
+			else
+				return COPYFILE_ERROR_CAP_GET;
+		}
+
+		/* ENODATA - empty->empty... */
+		if (cap_set_file(dest, cap) && errno != ENODATA)
+			return COPYFILE_ERROR_CAP_SET;
+
+		if (result_flags)
+			*result_flags |= COPYFILE_COPY_CAP;
+
+		return COPYFILE_NO_ERROR;
+	}
+#endif /*HAVE_LIBCAP*/
+
+	return COPYFILE_ERROR_UNSUPPORTED;
+}
+
 copyfile_error_t copyfile_copy_metadata(const char* source,
 		const char* dest, const struct stat* st,
 		unsigned int flags, unsigned int* result_flags)
@@ -886,6 +929,15 @@ copyfile_error_t copyfile_copy_metadata(const char* source,
 	if (flags & COPYFILE_COPY_XATTR_ALL)
 	{
 		copyfile_copy_xattr(source, dest, flags, &done);
+
+		flags &= ~done;
+		if (result_flags)
+			*result_flags |= done;
+	}
+
+	if (flags & COPYFILE_COPY_CAP)
+	{
+		copyfile_copy_cap(source, dest, st, flags, &done);
 
 		flags &= ~done;
 		if (result_flags)

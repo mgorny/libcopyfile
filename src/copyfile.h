@@ -55,6 +55,8 @@ typedef enum
 	COPYFILE_ERROR_XATTR_SET,
 	COPYFILE_ERROR_ACL_GET,
 	COPYFILE_ERROR_ACL_SET,
+	COPYFILE_ERROR_CAP_GET,
+	COPYFILE_ERROR_CAP_SET,
 	COPYFILE_ERROR_DOMAIN_MAX,
 
 	/**
@@ -99,11 +101,11 @@ typedef enum
 	/**
 	 * Copy the user owner of the file.
 	 */
-	COPYFILE_COPY_USER = 0x01,
+	COPYFILE_COPY_USER = 0x0001,
 	/**
 	 * Copy the group owner the file.
 	 */
-	COPYFILE_COPY_GROUP = 0x02,
+	COPYFILE_COPY_GROUP = 0x0002,
 	/**
 	 * Copy both the user and the group owner of the file.
 	 */
@@ -115,7 +117,7 @@ typedef enum
 	 * Note that if this is not used but owner of the file is changed,
 	 * the resulting mode may be affected by the call to chown().
 	 */
-	COPYFILE_COPY_MODE = 0x04,
+	COPYFILE_COPY_MODE = 0x0004,
 
 	/**
 	 * Copy file modification time.
@@ -124,7 +126,7 @@ typedef enum
 	 * without changing atime. On those systems, this will be equivalent
 	 * to COPYFILE_COPY_TIMES.
 	 */
-	COPYFILE_COPY_MTIME = 0x08,
+	COPYFILE_COPY_MTIME = 0x0008,
 	/**
 	 * Copy file access time.
 	 *
@@ -132,7 +134,7 @@ typedef enum
 	 * without changing mtime. On those systems, this will be equivalent
 	 * to COPYFILE_COPY_TIMES.
 	 */
-	COPYFILE_COPY_ATIME = 0x10,
+	COPYFILE_COPY_ATIME = 0x0010,
 	/**
 	 * Copy both file access & modification times.
 	 */
@@ -149,21 +151,26 @@ typedef enum
 	 *
 	 * This will omit special attributes, e.g. POSIX ACLs.
 	 */
-	COPYFILE_COPY_XATTR = 0x20,
+	COPYFILE_COPY_XATTR = 0x0020,
 	/**
 	 * Copy the 'access' ACL.
 	 *
 	 * Note that this usually implies copying mode as well (except for
 	 * special bits like S_ISUID, S_ISGID and S_ISVTX).
 	 */
-	COPYFILE_COPY_ACL_ACCESS = 0x40,
+	COPYFILE_COPY_ACL_ACCESS = 0x0040,
 	/**
 	 * Copy the 'default' ACL (for directories).
 	 */
-	COPYFILE_COPY_ACL_DEFAULT = 0x80,
+	COPYFILE_COPY_ACL_DEFAULT = 0x0080,
 
 	COPYFILE_COPY_ACL = COPYFILE_COPY_ACL_ACCESS
 		| COPYFILE_COPY_ACL_DEFAULT,
+
+	/**
+	 * Copy capabilities.
+	 */
+	COPYFILE_COPY_CAP = 0x0100,
 
 	/**
 	 * Copy all supported extended attributes.
@@ -176,7 +183,7 @@ typedef enum
 	 * All metadata.
 	 */
 	COPYFILE_COPY_ALL_METADATA = COPYFILE_COPY_STAT
-		| COPYFILE_COPY_XATTR_ALL
+		| COPYFILE_COPY_XATTR_ALL | COPYFILE_COPY_CAP
 } copyfile_metadata_flag_t;
 
 /**
@@ -516,6 +523,27 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
  * error code.
  */
 copyfile_error_t copyfile_copy_acl(const char* source,
+		const char* dest, const struct stat* st,
+		unsigned int flags, unsigned int* result_flags);
+
+/**
+ * Copy capabilities of a file.
+ *
+ * If the capability support is disabled, it will return
+ * COPYFILE_ERROR_UNSUPPORTED. If source file does not support caps, it
+ * will return COPYFILE_NO_ERROR (since there's nothing to copy).
+ *
+ * The @flags parameter should specify COPYFILE_COPY_CAP are to be
+ * copied, or just 0.
+ *
+ * If @result_flags is not NULL, the bit-field pointed by it will
+ * have COPYFILE_COPY_CAP bit set if capabilities were copied
+ * successfully (it will be reset to zero first).
+ *
+ * Returns 0 on success, an error otherwise. errno will hold the system
+ * error code.
+ */
+copyfile_error_t copyfile_copy_cap(const char* source,
 		const char* dest, const struct stat* st,
 		unsigned int flags, unsigned int* result_flags);
 
