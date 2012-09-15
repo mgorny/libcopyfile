@@ -91,19 +91,35 @@ copyfile_error_t copyfile_set_stat(const char* path,
 
 	if (flags & COPYFILE_COPY_TIMES)
 	{
-#ifdef HAVE_UTIMENSAT
+#ifndef HAVE_UTIMENSAT
+#	ifndef HAVE_LUTIMES
+		if (S_ISLNK(st->st_mode))
+			return COPYFILE_NO_ERROR;
+#	endif
+#endif
+
+#ifdef HAVE_UTIMES
 		{
 			struct timespec t[2];
-			int at_flags = S_ISLNK(st->st_mode) ? AT_SYMLINK_NOFOLLOW : 0;
 
-			if (flags & COPYFILE_COPY_ATIME)
-				t[0] = st->st_atim;
-			else
+#ifdef HAVE_UTIMENSAT
+			int at_flags = S_ISLNK(st->st_mode) ? AT_SYMLINK_NOFOLLOW : 0;
+#endif
+
+#ifdef HAVE_STRUCT_STAT_ST_ATIMESPEC /* BSD */
+			t[0] = st->st_atimespec;
+			t[1] = st->st_mtimespec;
+#else /*!HAVE_STRUCT_STAT_ST_ATIMESPEC*/
+			t[0] = st->st_atim;
+			t[1] = st->st_mtim;
+#endif /*HAVE_STRUCT_STAT_ST_ATIMESPEC*/
+
+#ifdef HAVE_UTIMENSAT
+
+			if (!(flags & COPYFILE_COPY_ATIME))
 				t[0].tv_nsec = UTIME_OMIT;
 
-			if (flags & COPYFILE_COPY_MTIME)
-				t[1] = st->st_mtim;
-			else
+			if (!(flags & COPYFILE_COPY_MTIME))
 				t[1].tv_nsec = UTIME_OMIT;
 
 			if (!utimensat(AT_FDCWD, path, t, at_flags))
@@ -113,10 +129,33 @@ copyfile_error_t copyfile_set_stat(const char* path,
 			}
 			else if (errno != EOPNOTSUPP)
 				return COPYFILE_ERROR_UTIME;
-		}
+
 #else /*!HAVE_UTIMENSAT*/
-		/* don't try utime() on a symbolic link */
-		if (!S_ISLNK(st->st_mode))
+			{
+				struct timeval tv[2];
+				int ret;
+
+				tv[0].tv_sec = t[0].tv_sec;
+				tv[0].tv_usec = t[0].tv_nsec / 1000;
+				tv[1].tv_sec = t[1].tv_sec;
+				tv[1].tv_usec = t[1].tv_nsec / 1000;
+
+#ifdef HAVE_LUTIMES
+				ret = lutimes(path, tv);
+#else
+				ret = utimes(path, tv);
+#endif
+				if (!ret)
+				{
+					if (result_flags)
+						*result_flags |= COPYFILE_COPY_TIMES;
+				}
+				else
+					return COPYFILE_ERROR_UTIME;
+			}
+#endif /*HAVE_UTIMENSAT*/
+		}
+#else /*!HAVE_UTIMES*/
 		{
 			struct utimbuf t;
 
