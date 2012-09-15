@@ -661,6 +661,8 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 				special_bit = COPYFILE_COPY_ACL_ACCESS;
 			else if (!strcmp(n, "system.posix_acl_default"))
 				special_bit = COPYFILE_COPY_ACL_DEFAULT;
+			else if (!strcmp(n, "security.capability"))
+				special_bit = COPYFILE_COPY_CAP;
 
 			/* omit special flags if not requested */
 			if (special_bit && !(flags & special_bit))

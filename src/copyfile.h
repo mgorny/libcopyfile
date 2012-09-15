@@ -177,13 +177,14 @@ typedef enum
 	 *
 	 * This implies copying special xattrs like ACLs as well.
 	 */
-	COPYFILE_COPY_XATTR_ALL = COPYFILE_COPY_XATTR | COPYFILE_COPY_ACL,
+	COPYFILE_COPY_XATTR_ALL = COPYFILE_COPY_XATTR | COPYFILE_COPY_ACL
+		| COPYFILE_COPY_CAP,
 
 	/**
 	 * All metadata.
 	 */
 	COPYFILE_COPY_ALL_METADATA = COPYFILE_COPY_STAT
-		| COPYFILE_COPY_XATTR_ALL | COPYFILE_COPY_CAP
+		| COPYFILE_COPY_XATTR_ALL
 } copyfile_metadata_flag_t;
 
 /**
