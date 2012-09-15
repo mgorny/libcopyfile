@@ -51,8 +51,8 @@ AS_IF([test x"$enable_libcap" != x"no"],
 	])
 ])
 
-AC_CHECK_FUNCS([acl_get_link_np fchmodat lchown posix_fallocate \
-	lutimes utimes utimensat])
+AC_CHECK_FUNCS([acl_get_link_np fchmodat ftruncate lchown \
+	posix_fallocate lutimes utimes utimensat])
 AC_CHECK_MEMBERS([struct stat.st_atimespec])
 
 AS_IF([test x"$enable_debug" = x"yes"],
