@@ -381,7 +381,8 @@ copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
 						addr.sun_family = AF_UNIX;
 						memcpy(addr.sun_path, path, path_size);
 
-						ret = bind(fd, &addr, sizeof(addr));
+						ret = bind(fd, (struct sockaddr*) &addr,
+								sizeof(addr));
 						err = COPYFILE_ERROR_BIND;
 
 						close(fd);
