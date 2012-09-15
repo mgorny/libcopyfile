@@ -16,7 +16,11 @@ AC_ARG_ENABLE([libacl],
 
 AS_IF([test x"$enable_libacl" != x"no"],
 [
-	AC_CHECK_LIB([acl], [acl_get_file])
+	AC_SEARCH_LIBS([acl_get_file], [acl],
+	[
+		AC_DEFINE([HAVE_LIBACL], [1],
+				[Define to 1 if you have acl_get_file() and friends.])
+	])
 ])
 
 AC_ARG_ENABLE([libattr],
@@ -25,7 +29,11 @@ AC_ARG_ENABLE([libattr],
 
 AS_IF([test x"$enable_libattr" != x"no"],
 [
-	AC_CHECK_LIB([attr], [getxattr])
+	AC_SEARCH_LIBS([getxattr], [attr],
+	[
+		AC_DEFINE([HAVE_LIBATTR], [1],
+				[Define to 1 if you have getxattr() and friends.])
+	])
 ])
 
 AC_CHECK_FUNCS([acl_get_link_np fchmodat lchown posix_fallocate utimensat])
