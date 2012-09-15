@@ -3,7 +3,7 @@ AC_INIT([libcopyfile], [0])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([1.6 foreign dist-bzip2 subdir-objects])
 
-AC_PROG_CC([c99 cc])
+AC_PROG_CC
 AC_USE_SYSTEM_EXTENSIONS
 LT_INIT([disable-static])
 
