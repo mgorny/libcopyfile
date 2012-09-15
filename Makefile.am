@@ -1,8 +1,17 @@
 lib_LTLIBRARIES = src/libcopyfile.la
 
 src_libcopyfile_la_SOURCES = \
-	src/common.h src/copyfile.h \
-	src/copyfile.c
+	src/copyfile-copy-stream.c \
+	src/copyfile-copy-regular.c \
+	src/copyfile-copy-symlink.c \
+	src/copyfile-create-special.c \
+	src/copyfile-copy-file.c \
+	src/copyfile-set-stat.c \
+	src/copyfile-copy-xattr.c \
+	src/copyfile-copy-acl.c \
+	src/copyfile-copy-cap.c \
+	src/copyfile-copy-metadata.c \
+	src/common.h src/copyfile.h
 src_libcopyfile_la_LDFLAGS = -version-info 0:0:0
 
 EXTRA_DIST = NEWS
