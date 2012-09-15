@@ -522,10 +522,10 @@ copyfile_error_t copyfile_set_stat(const char* path,
 		{
 #ifdef HAVE_FCHMODAT
 
-			int flags = S_ISLNK(st->st_mode) ? AT_SYMLINK_NOFOLLOW : 0;
+			int at_flags = S_ISLNK(st->st_mode) ? AT_SYMLINK_NOFOLLOW : 0;
 
 			if (!fchmodat(AT_FDCWD, path, st->st_mode & all_perm_bits,
-						flags))
+						at_flags))
 			{
 				if (result_flags)
 					*result_flags |= COPYFILE_COPY_MODE;
@@ -552,7 +552,7 @@ copyfile_error_t copyfile_set_stat(const char* path,
 #ifdef HAVE_UTIMENSAT
 		{
 			struct timespec t[2];
-			int flags = S_ISLNK(st->st_mode) ? AT_SYMLINK_NOFOLLOW : 0;
+			int at_flags = S_ISLNK(st->st_mode) ? AT_SYMLINK_NOFOLLOW : 0;
 
 			if (flags & COPYFILE_COPY_ATIME)
 				t[0] = st->st_atim;
@@ -564,7 +564,7 @@ copyfile_error_t copyfile_set_stat(const char* path,
 			else
 				t[1].tv_nsec = UTIME_OMIT;
 
-			if (!utimensat(AT_FDCWD, path, t, flags))
+			if (!utimensat(AT_FDCWD, path, t, at_flags))
 			{
 				if (result_flags)
 					*result_flags |= (flags & COPYFILE_COPY_TIMES);
