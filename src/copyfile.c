@@ -214,6 +214,7 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 		const char* dest, size_t expected_length,
 		copyfile_callback_t callback, void* callback_data)
 {
+#ifdef S_IFLNK
 	/* remember that the last cell is for null-terminator */
 
 	/* try to avoid dynamic allocation */
@@ -329,6 +330,9 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 		free(buf);
 		return ret;
 	}
+#endif /*S_IFLNK*/
+
+	return COPYFILE_ERROR_UNSUPPORTED;
 }
 
 copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
@@ -338,10 +342,16 @@ copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
 
 	switch (ftype)
 	{
+#ifdef S_IFBLK
 		case S_IFBLK:
+			progress.device = devid;
+			break;
+#endif /*S_IFBLK*/
+#ifdef S_IFCHR
 		case S_IFCHR:
 			progress.device = devid;
 			break;
+#endif /*S_IFCHR*/
 	}
 
 	if (callback && callback(COPYFILE_NO_ERROR, ftype, progress,
@@ -359,15 +369,24 @@ copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
 				ret = mkdir(path, perm_dir);
 				err = COPYFILE_ERROR_MKDIR;
 				break;
+#ifdef S_IFIFO
 			case S_IFIFO:
 				ret = mkfifo(path, perm_file);
 				err = COPYFILE_ERROR_MKFIFO;
 				break;
+#endif /*S_IFIFO*/
+#ifdef S_IFBLK
 			case S_IFBLK:
+				ret = mknod(path, ftype | perm_file, devid);
+				err = COPYFILE_ERROR_MKNOD;
+				break;
+#endif /*S_IFBLK*/
+#ifdef S_IFCHR
 			case S_IFCHR:
 				ret = mknod(path, ftype | perm_file, devid);
 				err = COPYFILE_ERROR_MKNOD;
 				break;
+#endif /*S_IFCHR*/
 #ifdef S_IFSOCK
 			case S_IFSOCK:
 				{
@@ -443,9 +462,11 @@ copyfile_error_t copyfile_copy_file(const char* source,
 		case S_IFREG:
 			return copyfile_copy_regular(source, dest, st->st_size,
 					callback, callback_data);
+#ifdef S_IFLNK
 		case S_IFLNK:
 			return copyfile_copy_symlink(source, dest, st->st_size,
 					callback, callback_data);
+#endif /*S_IFLNK*/
 		default:
 			return copyfile_create_special(dest, ftype, st->st_rdev,
 					callback, callback_data);
@@ -479,10 +500,10 @@ copyfile_error_t copyfile_set_stat(const char* path,
 			if (lchown(path, new_user, new_group)
 					&& errno != EOPNOTSUPP)
 				return COPYFILE_ERROR_CHOWN;
-#else
+#else /*!HAVE_LCHOWN*/
 			if (chown(path, new_user, new_group))
 				return COPYFILE_ERROR_CHOWN;
-#endif
+#endif /*HAVE_LCHOWN*/
 
 			if (result_flags)
 				*result_flags |= flags & COPYFILE_COPY_OWNER;
@@ -494,7 +515,7 @@ copyfile_error_t copyfile_set_stat(const char* path,
 #ifndef HAVE_FCHMODAT
 		/* don't try to chmod() a symbolic link */
 		if (!S_ISLNK(st->st_mode))
-#endif
+#endif /*HAVE_FCHMODAT*/
 		{
 #ifdef HAVE_FCHMODAT
 
@@ -519,7 +540,7 @@ copyfile_error_t copyfile_set_stat(const char* path,
 			else
 				return COPYFILE_ERROR_CHMOD;
 
-#endif
+#endif /*HAVE_FCHMODAT*/
 		}
 	}
 
