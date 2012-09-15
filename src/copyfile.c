@@ -577,8 +577,8 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 	 * any good way to distinguish between read and write errors. */
 	if (flags & COPYFILE_COPY_XATTR_ALL)
 	{
-		char list_buf[COPYFILE_BUFFER_SIZE];
-		char data_buf[COPYFILE_BUFFER_SIZE];
+		char list_buf[COPYFILE_BUFFER_SIZE / 2];
+		char data_buf[COPYFILE_BUFFER_SIZE / 2];
 		const ssize_t initial_buf_size = sizeof(list_buf);
 
 		char* list_bufp = list_buf;
