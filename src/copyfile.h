@@ -153,24 +153,16 @@ typedef enum
 	 */
 	COPYFILE_COPY_XATTR = 0x0020,
 	/**
-	 * Copy the 'access' ACL.
+	 * Copy the ACLs.
 	 *
 	 * Note that this usually implies copying mode as well (except for
 	 * special bits like S_ISUID, S_ISGID and S_ISVTX).
 	 */
-	COPYFILE_COPY_ACL_ACCESS = 0x0040,
-	/**
-	 * Copy the 'default' ACL (for directories).
-	 */
-	COPYFILE_COPY_ACL_DEFAULT = 0x0080,
-
-	COPYFILE_COPY_ACL = COPYFILE_COPY_ACL_ACCESS
-		| COPYFILE_COPY_ACL_DEFAULT,
-
+	COPYFILE_COPY_ACL = 0x0040,
 	/**
 	 * Copy capabilities.
 	 */
-	COPYFILE_COPY_CAP = 0x0100,
+	COPYFILE_COPY_CAP = 0x0080,
 
 	/**
 	 * Copy all supported extended attributes.

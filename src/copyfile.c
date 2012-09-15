@@ -657,10 +657,9 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 			ssize_t data_len;
 			unsigned int special_bit = 0;
 
-			if (!strcmp(n, "system.posix_acl_access"))
-				special_bit = COPYFILE_COPY_ACL_ACCESS;
-			else if (!strcmp(n, "system.posix_acl_default"))
-				special_bit = COPYFILE_COPY_ACL_DEFAULT;
+			if (!strcmp(n, "system.posix_acl_access")
+					|| !strcmp(n, "system.posix_acl_default"))
+				special_bit = COPYFILE_COPY_ACL;
 			else if (!strcmp(n, "security.capability"))
 				special_bit = COPYFILE_COPY_CAP;
 
@@ -747,12 +746,6 @@ static const acl_type_t acl_types[] =
 	ACL_TYPE_ACCESS,
 	ACL_TYPE_DEFAULT
 };
-
-static const unsigned int acl_flags[] =
-{
-	COPYFILE_COPY_ACL_ACCESS,
-	COPYFILE_COPY_ACL_DEFAULT
-};
 #endif /*HAVE_LIBACL*/
 
 copyfile_error_t copyfile_copy_acl(const char* source,
@@ -792,55 +785,50 @@ copyfile_error_t copyfile_copy_acl(const char* source,
 
 		for (i = 0; i < 2; ++i)
 		{
-			if (flags & acl_flags[i])
+			acl_t acl;
+
+#ifdef HAVE_ACL_GET_LINK_NP
+			acl = acl_get_link_np(source, acl_types[i]);
+#else
+			acl = acl_get_file(source, acl_types[i]);
+#endif
+			if (acl)
 			{
-				acl_t acl;
+				int aclret;
 
 #ifdef HAVE_ACL_GET_LINK_NP
-				acl = acl_get_link_np(source, acl_types[i]);
+				aclret = acl_set_link_np(dest, acl_types[i], acl);
 #else
-				acl = acl_get_file(source, acl_types[i]);
+				aclret = acl_set_file(dest, acl_types[i], acl);
 #endif
-				if (acl)
+				if (aclret && !ret)
 				{
-					int aclret;
-
-#ifdef HAVE_ACL_GET_LINK_NP
-					aclret = acl_set_link_np(dest, acl_types[i], acl);
-#else
-					aclret = acl_set_file(dest, acl_types[i], acl);
-#endif
-					if (!aclret)
-					{
-						if (result_flags)
-							*result_flags |= acl_flags[i];
-					}
-					else if (!ret)
-					{
-						ret = COPYFILE_ERROR_ACL_SET;
-						saved_errno = errno;
-					}
-
-					acl_free(acl);
+					ret = COPYFILE_ERROR_ACL_SET;
+					saved_errno = errno;
 				}
-				else
+
+				acl_free(acl);
+			}
+			else
+			{
+				/* ACLs not supported? fine, nothing to copy. */
+				if (errno == EOPNOTSUPP)
+					return COPYFILE_NO_ERROR;
+				else if (i > 0 && errno == EACCES)
+					/* ACL_TYPE_DEFAULT on non-dir, likely */;
+				else if (!ret)
 				{
-					/* ACLs not supported? fine, nothing to copy. */
-					if (errno == EOPNOTSUPP)
-						return COPYFILE_NO_ERROR;
-					else if (i > 0 && errno == EACCES)
-						/* ACL_TYPE_DEFAULT on non-dir, likely */;
-					else if (!ret)
-					{
-						ret = COPYFILE_ERROR_ACL_GET;
-						saved_errno = errno;
-					}
+					ret = COPYFILE_ERROR_ACL_GET;
+					saved_errno = errno;
 				}
 			}
 		}
 
 		if (ret)
 			errno = saved_errno;
+		else if (result_flags)
+			*result_flags |= COPYFILE_COPY_ACL;
+
 		return ret;
 	}
 #endif /*HAVE_LIBACL*/
