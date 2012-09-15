@@ -16,10 +16,13 @@
 #include <errno.h>
 #include <limits.h>
 #include <assert.h>
-#include <sys/socket.h>
-#include <sys/un.h>
 #include <string.h>
 #include <utime.h>
+
+#ifdef S_IFSOCK
+#	include <sys/socket.h>
+#	include <sys/un.h>
+#endif
 
 #ifdef HAVE_LIBATTR
 #	include <attr/xattr.h>
@@ -365,6 +368,7 @@ copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
 				ret = mknod(path, ftype | perm_file, devid);
 				err = COPYFILE_ERROR_MKNOD;
 				break;
+#ifdef S_IFSOCK
 			case S_IFSOCK:
 				{
 					int fd;
@@ -394,6 +398,7 @@ copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
 					}
 				}
 				break;
+#endif /*S_IFSOCK*/
 			default:
 				assert(not_reached);
 				return COPYFILE_ERROR_INTERNAL;
