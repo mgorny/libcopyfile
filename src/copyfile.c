@@ -34,23 +34,7 @@
 #	include <sys/capability.h>
 #endif
 
-#ifndef COPYFILE_BUFFER_SIZE
-#	define COPYFILE_BUFFER_SIZE 4096
-#endif
-
-#ifndef COPYFILE_CALLBACK_OPCOUNT
-#	define COPYFILE_CALLBACK_OPCOUNT 64
-#endif
-
-static const int not_reached = 0;
-
-/* default permissions */
-enum modes
-{
-	perm_dir = S_IRWXU | S_IRWXG | S_IRWXO,
-	perm_file = perm_dir & ~(S_IXUSR | S_IXGRP | S_IXOTH),
-	all_perm_bits = perm_dir | S_ISUID | S_ISGID | S_ISVTX
-};
+#include "common.h"
 
 copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 		off_t* offset_store, off_t expected_size,
