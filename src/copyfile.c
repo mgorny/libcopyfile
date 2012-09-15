@@ -39,11 +39,12 @@
 static const int not_reached = 0;
 
 /* default permissions */
-static const mode_t perm_dir = S_IRWXU | S_IRWXG | S_IRWXO;
-static const mode_t perm_file = perm_dir
-		& ~(S_IXUSR | S_IXGRP | S_IXOTH);
-static const mode_t all_perm_bits = perm_dir
-		| S_ISUID | S_ISGID | S_ISVTX;
+enum modes
+{
+	perm_dir = S_IRWXU | S_IRWXG | S_IRWXO,
+	perm_file = perm_dir & ~(S_IXUSR | S_IXGRP | S_IXOTH),
+	all_perm_bits = perm_dir | S_ISUID | S_ISGID | S_ISVTX
+};
 
 copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 		off_t* offset_store, off_t expected_size,
