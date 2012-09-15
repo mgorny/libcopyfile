@@ -31,6 +31,21 @@ copyfile_error_t copyfile_copy_cap(const char* source,
 	{
 		cap_t cap = 0;
 
+		{
+			struct stat buf;
+
+			if (!st)
+			{
+				if (lstat(source, &buf))
+					return COPYFILE_ERROR_STAT;
+
+				st = &buf;
+			}
+
+			if (!S_ISREG(st->st_mode))
+				return COPYFILE_NO_ERROR;
+		}
+
 		/* ENODATA - empty caps
 		 * ENOTSUP - caps not supported */
 		cap = cap_get_file(source);
