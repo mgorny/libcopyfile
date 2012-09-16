@@ -11,6 +11,7 @@ src_libcopyfile_la_SOURCES = \
 	src/copyfile-copy-acl.c \
 	src/copyfile-copy-cap.c \
 	src/copyfile-copy-metadata.c \
+	src/copyfile-archive-file.c \
 	src/common.h src/copyfile.h
 src_libcopyfile_la_LDFLAGS = -version-info 0:0:0
 

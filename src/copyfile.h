@@ -570,4 +570,43 @@ copyfile_error_t copyfile_copy_metadata(const char* source,
 		const char* dest, const struct stat* st,
 		unsigned int flags, unsigned int* result_flags);
 
+/**
+ * Copy the given file to a new location, preserving given metadata.
+ *
+ * This calls copyfile_copy_file() and then copyfile_copy_metadata().
+ * It is roughly equivalent to 'cp -a' without copying recursively
+ * and without any special replacement behavior.
+ *
+ * The @dest argument has to be a full path to the new file and not
+ * just a directory.
+ *
+ * If the information about the file has been obtained using the lstat()
+ * function, a pointer to the obtained structure should be passed
+ * as @st. Otherwise, a NULL pointer should be passed.
+ *
+ * The @flags parameter can specify which metadata should be copied.
+ * To copy all available metadata, specify 0 (which results in
+ * COPYFILE_COPY_ALL_METADATA). For a more fine-grained choice, take
+ * a look at description of copyfile_metadata_flag_t.
+ *
+ * If @result_flags is not NULL, the bit-field pointed by it will
+ * contain a copy of flags explaining which operations were done
+ * successfully (it will be reset to zero first).
+ *
+ * If @callback is non-NULL, it will be used to report progress and/or
+ * errors. The @callback_data will be passed to it. For more details,
+ * see copyfile_callback_t description.
+ *
+ * If @callback is NULL, default error handling will be used. The EINTR
+ * error will be retried indefinitely, and other errors will cause
+ * immediate failure.
+ *
+ * Returns 0 on success, an error otherwise. errno will hold the system
+ * error code.
+ */
+copyfile_error_t copyfile_archive_file(const char* source,
+		const char* dest, const struct stat* st,
+		unsigned int flags, unsigned int* result_flags,
+		copyfile_callback_t callback, void* callback_data);
+
 #endif /*COPYFILE_H*/
