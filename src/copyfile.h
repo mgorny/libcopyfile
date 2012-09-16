@@ -57,6 +57,7 @@ typedef enum
 	COPYFILE_ERROR_ACL_SET,
 	COPYFILE_ERROR_CAP_GET,
 	COPYFILE_ERROR_CAP_SET,
+	COPYFILE_ERROR_LINK,
 	COPYFILE_ERROR_DOMAIN_MAX,
 
 	/**
@@ -607,6 +608,32 @@ copyfile_error_t copyfile_copy_metadata(const char* source,
 copyfile_error_t copyfile_archive_file(const char* source,
 		const char* dest, const struct stat* st,
 		unsigned int flags, unsigned int* result_flags,
+		copyfile_callback_t callback, void* callback_data);
+
+/**
+ * Hard-link the given file to a new location, fallback to copy.
+ *
+ * The @source file must not be a directory. The @dest argument has to
+ * be a full path to the new file and not just a directory.
+ *
+ * If @result_flags is not NULL, the bit-field pointed by it will
+ * contain a copy of flags explaining which metadata was copied
+ * successfully (it will be reset to zero first). If hard-link
+ * succeeded, it will be set to COPYFILE_COPY_ALL_METADATA.
+ *
+ * If @callback is non-NULL, it will be used to report progress and/or
+ * errors. The @callback_data will be passed to it. For more details,
+ * see copyfile_callback_t description.
+ *
+ * If @callback is NULL, default error handling will be used. The EINTR
+ * error will be retried indefinitely, and other errors will cause
+ * immediate failure.
+ *
+ * Returns 0 on success, an error otherwise. errno will hold the system
+ * error code.
+ */
+copyfile_error_t copyfile_link_file(const char* source,
+		const char* dest, unsigned int* result_flags,
 		copyfile_callback_t callback, void* callback_data);
 
 #endif /*COPYFILE_H*/
