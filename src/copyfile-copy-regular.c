@@ -24,7 +24,7 @@ copyfile_error_t copyfile_copy_regular(const char* source,
 #ifdef HAVE_POSIX_FALLOCATE
 	int preallocated = 0;
 #endif
-	int open_flags = 0;
+	int open_flags = O_WRONLY | O_CREAT;
 
 	/* if there's no ftruncate(), we need to truncate when opening.
 	 * if there's posix_fallocate(), we truncate anyway trying to get
@@ -40,7 +40,7 @@ copyfile_error_t copyfile_copy_regular(const char* source,
 	if (fd_in == -1)
 		return COPYFILE_ERROR_OPEN_SOURCE;
 
-	fd_out = creat(dest, perm_file);
+	fd_out = open(dest, open_flags, perm_file);
 	if (fd_out == -1)
 	{
 		int hold_errno = errno;
