@@ -11,6 +11,7 @@
 #include "common.h"
 
 #include <sys/stat.h>
+#include <errno.h>
 
 copyfile_error_t copyfile_copy_metadata(const char* source,
 		const char* dest, const struct stat* st,
@@ -18,6 +19,9 @@ copyfile_error_t copyfile_copy_metadata(const char* source,
 {
 	struct stat buf;
 	unsigned int done = 0;
+
+	copyfile_error_t ret = COPYFILE_NO_ERROR;
+	int saved_errno;
 
 	if (!flags)
 		flags = COPYFILE_COPY_ALL_METADATA;
@@ -51,7 +55,12 @@ copyfile_error_t copyfile_copy_metadata(const char* source,
 
 	if (flags & COPYFILE_COPY_XATTR_ALL)
 	{
-		copyfile_copy_xattr(source, dest, flags, &done);
+		if (copyfile_copy_xattr(source, dest, flags, &done)
+				== COPYFILE_ERROR_XATTR_GET && !ret)
+		{
+			ret = COPYFILE_ERROR_XATTR_GET;
+			saved_errno = errno;
+		}
 
 		flags &= ~done;
 		if (result_flags)
@@ -60,7 +69,12 @@ copyfile_error_t copyfile_copy_metadata(const char* source,
 
 	if (flags & COPYFILE_COPY_CAP)
 	{
-		copyfile_copy_cap(source, dest, st, flags, &done);
+		if (copyfile_copy_cap(source, dest, st, flags, &done)
+				== COPYFILE_ERROR_CAP_GET && !ret)
+		{
+			ret = COPYFILE_ERROR_CAP_GET;
+			saved_errno = errno;
+		}
 
 		flags &= ~done;
 		if (result_flags)
@@ -69,7 +83,12 @@ copyfile_error_t copyfile_copy_metadata(const char* source,
 
 	if (flags & COPYFILE_COPY_ACL)
 	{
-		copyfile_copy_acl(source, dest, st, flags, &done);
+		if (copyfile_copy_acl(source, dest, st, flags, &done)
+				== COPYFILE_ERROR_ACL_GET && !ret)
+		{
+			ret = COPYFILE_ERROR_ACL_GET;
+			saved_errno = errno;
+		}
 
 		flags &= ~done;
 		if (result_flags)
@@ -85,5 +104,7 @@ copyfile_error_t copyfile_copy_metadata(const char* source,
 			*result_flags |= done;
 	}
 
-	return COPYFILE_NO_ERROR;
+	if (ret)
+		errno = saved_errno;
+	return ret;
 }

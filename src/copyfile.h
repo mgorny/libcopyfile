@@ -547,10 +547,11 @@ copyfile_error_t copyfile_copy_cap(const char* source,
  * contain a copy of flags explaining which operations were done
  * successfully (it will be reset to zero first).
  *
- * Note that some of the minor errors are not considered as a reason for
- * failure exit, and instead are only reported through unset bits
- * in @result_flags. This includes e.g. unsupported extended attributes
- * in destination.
+ * Note that only read/input errors are returned by function. Unless
+ * lstat() call fails, the call attempts to copy all metadata even
+ * if an error occurs. In case of multiple errors, only the first one
+ * is returned. Set/output errors can be distinguished using
+ * @result_flags.
  *
  * Returns 0 on success, an error otherwise. errno will hold the system
  * error code.
