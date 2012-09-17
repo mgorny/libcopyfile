@@ -51,7 +51,11 @@ copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
 		switch (ftype)
 		{
 			case S_IFDIR:
+#ifdef _WIN32
+				ret = mkdir(path);
+#else
 				ret = mkdir(path, perm_dir);
+#endif
 				err = COPYFILE_ERROR_MKDIR;
 				break;
 #ifdef S_IFIFO
