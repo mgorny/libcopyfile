@@ -30,7 +30,7 @@ copyfile_error_t copyfile_move_file(const char* source,
 	else if (errno != EXDEV)
 		return COPYFILE_ERROR_RENAME;
 
-	if (unlink(dest))
+	if (unlink(dest) && errno != ENOENT)
 		return COPYFILE_ERROR_UNLINK_DEST;
 
 	ret = copyfile_archive_file(source, dest, 0,
