@@ -41,15 +41,12 @@ copyfile_error_t copyfile_copy_metadata(const char* source,
 
 	if (flags & COPYFILE_COPY_OWNER)
 	{
-		copyfile_error_t ret = copyfile_set_stat(dest, st,
-				flags & COPYFILE_COPY_OWNER, &done);
+		unsigned int done = copyfile_set_stat(dest, st,
+				flags & COPYFILE_COPY_OWNER);
 
 		flags &= ~done;
 		if (result_flags)
 			*result_flags |= done;
-
-		if (ret)
-			return ret;
 	}
 
 	if (flags & COPYFILE_COPY_XATTR_ALL)
@@ -81,15 +78,11 @@ copyfile_error_t copyfile_copy_metadata(const char* source,
 
 	if (flags & COPYFILE_COPY_STAT)
 	{
-		copyfile_error_t ret = copyfile_set_stat(dest, st,
-				flags, &done);
+		unsigned int done = copyfile_set_stat(dest, st, flags);
 
 		flags &= ~done;
 		if (result_flags)
 			*result_flags |= done;
-
-		if (ret)
-			return ret;
 	}
 
 	return COPYFILE_NO_ERROR;

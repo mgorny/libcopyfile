@@ -47,9 +47,6 @@ typedef enum
 	COPYFILE_ERROR_MKNOD,
 	COPYFILE_ERROR_SOCKET,
 	COPYFILE_ERROR_BIND,
-	COPYFILE_ERROR_CHOWN,
-	COPYFILE_ERROR_CHMOD,
-	COPYFILE_ERROR_UTIME,
 	COPYFILE_ERROR_XATTR_LIST,
 	COPYFILE_ERROR_XATTR_GET,
 	COPYFILE_ERROR_XATTR_SET,
@@ -448,24 +445,12 @@ copyfile_error_t copyfile_copy_file(const char* source,
  * COPYFILE_COPY_STAT).  For more fine-grained control, see
  * the description of copyfile_metadata_flag_t.
  *
- * If @result_flags is not NULL, the bit-field pointed by it will
- * contain a copy of flags explaining which operations were done
- * successfully (it will be reset to zero first). It will be equal
- * to @flags if all changes were done successfully. If the operation is
- * aborted due to an error, it will state which changes were done
- * before the error. If some of the changes were unsupported,
- * the relevant flags will be unset.
- *
- * This function does not provide a fine-grained error reporting.
- * On the first major failure, it will abort, possibly having modified
- * the metadata partially. Unsupported operation errors will be ignored.
- *
- * Returns 0 on success, an error otherwise. errno will hold the system
- * error code.
+ * Returns a bit-field explaining which operations were done
+ * successfully. For each successful change, a flag (from
+ * copyfile_metadata_flag_t) will be set.
  */
-copyfile_error_t copyfile_set_stat(const char* path,
-		const struct stat* st, unsigned int flags,
-		unsigned int* result_flags);
+unsigned int copyfile_set_stat(const char* path,
+		const struct stat* st, unsigned int flags);
 
 /**
  * Copy extended attributes of a file.
