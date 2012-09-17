@@ -29,6 +29,8 @@ unsigned int copyfile_set_stat(const char* path,
 	if (!flags)
 		flags = COPYFILE_COPY_STAT;
 
+#ifdef HAVE_CHOWN
+
 	if (flags & COPYFILE_COPY_OWNER)
 	{
 		uid_t new_user = flags & COPYFILE_COPY_USER
@@ -36,12 +38,12 @@ unsigned int copyfile_set_stat(const char* path,
 		gid_t new_group = flags & COPYFILE_COPY_GROUP
 			? st->st_gid : -1;
 
-#ifdef HAVE_LCHOWN
+#	ifdef HAVE_LCHOWN
 
 		if (!lchown(path, new_user, new_group))
 			flags |= COPYFILE_COPY_OWNER;
 
-#else /*!HAVE_LCHOWN*/
+#	else /*!HAVE_LCHOWN*/
 
 		/* don't try to chown() a symbolic link */
 		if (!S_ISLNK(st->st_mode))
@@ -50,8 +52,11 @@ unsigned int copyfile_set_stat(const char* path,
 				flags |= COPYFILE_COPY_OWNER;
 		}
 
-#endif /*HAVE_LCHOWN*/
+#	endif /*HAVE_LCHOWN*/
+
 	}
+
+#endif /*HAVE_CHOWN*/
 
 	if (flags & COPYFILE_COPY_MODE)
 	{
