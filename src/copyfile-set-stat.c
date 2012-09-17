@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <time.h>
 #include <unistd.h>
+#include <utime.h>
 #include <errno.h>
 
 unsigned int copyfile_set_stat(const char* path,
