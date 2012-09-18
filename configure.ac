@@ -13,10 +13,10 @@ AC_ARG_ENABLE([debug],
 	AS_HELP_STRING([--enable-debug], [Enable stderr debug]))
 
 AC_ARG_ENABLE([libacl],
-	AS_HELP_STRING([--disable-libacl],
-		[Disable use of libacl (default: autodetect)]))
+	AS_HELP_STRING([--disable-acl],
+		[Disable support for ACLs (default: autodetect)]))
 
-AS_IF([test x"$enable_libacl" != x"no"],
+AS_IF([test x"$enable_acl" != x"no"],
 [
 	AC_SEARCH_LIBS([acl_get_file], [acl],
 	[
@@ -26,10 +26,10 @@ AS_IF([test x"$enable_libacl" != x"no"],
 ])
 
 AC_ARG_ENABLE([libattr],
-	AS_HELP_STRING([--disable-libattr],
-		[Disable use of libattr (default: autodetect)]))
+	AS_HELP_STRING([--disable-xattr],
+		[Disable support for file extended attributes (default: autodetect)]))
 
-AS_IF([test x"$enable_libattr" != x"no"],
+AS_IF([test x"$enable_xattr" != x"no"],
 [
 	AC_SEARCH_LIBS([getxattr], [attr],
 	[
@@ -38,9 +38,9 @@ AS_IF([test x"$enable_libattr" != x"no"],
 	])
 ])
 
-AC_ARG_ENABLE([libcap],
-	AS_HELP_STRING([--disable-libcap],
-		[Disable use of libcap (default: autodetect)]))
+AC_ARG_ENABLE([cap],
+	AS_HELP_STRING([--disable-cap],
+		[Disable support for capabilities (default: autodetect)]))
 
 AS_IF([test x"$enable_libcap" != x"no"],
 [
