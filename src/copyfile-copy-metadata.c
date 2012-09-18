@@ -18,7 +18,6 @@ copyfile_error_t copyfile_copy_metadata(const char* source,
 		unsigned int flags, unsigned int* result_flags)
 {
 	struct stat buf;
-	unsigned int done = 0;
 
 	copyfile_error_t ret = COPYFILE_NO_ERROR;
 	int saved_errno;
