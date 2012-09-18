@@ -27,11 +27,11 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 
 #ifdef HAVE_LIBATTR
 	if (!flags)
-		flags = COPYFILE_COPY_XATTR_ALL;
+		flags = COPYFILE_COPY_XATTR;
 
 	/* sadly, we can't use attr_copy_file() because it doesn't provide
 	 * any good way to distinguish between read and write errors. */
-	if (flags & COPYFILE_COPY_XATTR_ALL)
+	if (flags & COPYFILE_COPY_XATTR)
 	{
 		char list_buf[COPYFILE_BUFFER_SIZE / 2];
 		char data_buf[COPYFILE_BUFFER_SIZE / 2];
@@ -49,7 +49,6 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 
 		copyfile_error_t ret = COPYFILE_NO_ERROR;
 		int saved_errno;
-		unsigned int failed_flags = 0;
 
 		list_len = llistxattr(source, 0, 0);
 		if (list_len == -1)
@@ -81,24 +80,13 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 		for (n = list_bufp; n < &list_bufp[list_len]; n = strchr(n, 0) + 1)
 		{
 			ssize_t data_len;
-			unsigned int flag_bit;
 
-			if (!strcmp(n, "system.posix_acl_access")
-					|| !strcmp(n, "system.posix_acl_default"))
-				flag_bit = COPYFILE_COPY_ACL;
-			else if (!strcmp(n, "security.capability"))
-				flag_bit = COPYFILE_COPY_CAP;
-			else
-				flag_bit = COPYFILE_COPY_XATTR;
-
-			/* omit particular xattr types if not requested */
-			if (!(flags & flag_bit))
+			if (strcmp(n, "user.") && strcmp(n, "trusted."))
 				continue;
 
 			data_len = lgetxattr(source, n, 0, 0);
 			if (data_len == -1)
 			{
-				failed_flags |= flag_bit;
 				/* return the first error
 				 * but try to copy the remaining attributes first,
 				 * in case user ignored errors */
@@ -115,7 +103,6 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 				char* new_data_bufp = realloc(data_bufp, data_len);
 				if (!new_data_bufp)
 				{
-					failed_flags |= flag_bit;
 					if (!ret)
 					{
 						ret = COPYFILE_ERROR_MALLOC;
@@ -130,7 +117,6 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 			data_len = lgetxattr(source, n, data_bufp, data_buf_size);
 			if (data_len == -1)
 			{
-				failed_flags |= flag_bit;
 				if (!ret)
 				{
 					ret = COPYFILE_ERROR_XATTR_GET;
@@ -141,7 +127,6 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 
 			if (lsetxattr(dest, n, data_bufp, data_len, 0))
 			{
-				failed_flags |= flag_bit;
 				if (!ret)
 				{
 					ret = COPYFILE_ERROR_XATTR_SET;
@@ -150,10 +135,8 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 
 				/* further tries with same attr type will fail as well */
 				if (errno == ENOTSUP)
-					flags &= ~flag_bit;
+					break;
 			}
-			else if (result_flags)
-				*result_flags |= flag_bit;
 		}
 
 		if (list_buf_size > initial_buf_size)
@@ -163,8 +146,8 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 
 		/* set COPYFILE_COPY_XATTR even if there were no regular xattrs,
 		 * failed_flags will unset it on failure */
-		*result_flags |= COPYFILE_COPY_XATTR;
-		*result_flags &= ~failed_flags;
+		if (!ret && result_flags)
+			*result_flags |= COPYFILE_COPY_XATTR;
 
 		if (ret)
 			errno = saved_errno;

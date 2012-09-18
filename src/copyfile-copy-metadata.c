@@ -53,7 +53,7 @@ copyfile_error_t copyfile_copy_metadata(const char* source,
 			*result_flags |= done;
 	}
 
-	if (flags & COPYFILE_COPY_XATTR_ALL)
+	if (flags & COPYFILE_COPY_XATTR)
 	{
 		if (copyfile_copy_xattr(source, dest, flags, &done)
 				== COPYFILE_ERROR_XATTR_GET && !ret)
