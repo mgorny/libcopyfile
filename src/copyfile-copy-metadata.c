@@ -55,51 +55,56 @@ copyfile_error_t copyfile_copy_metadata(const char* source,
 
 	if (flags & COPYFILE_COPY_XATTR)
 	{
-		if (copyfile_copy_xattr(source, dest, flags, &done)
-				== COPYFILE_ERROR_XATTR_GET && !ret)
+		copyfile_error_t lret = copyfile_copy_xattr(source, dest);
+
+		if (!lret)
 		{
-			ret = COPYFILE_ERROR_XATTR_GET;
+			if (result_flags)
+				*result_flags |= COPYFILE_COPY_XATTR;
+		}
+		else if (lret == COPYFILE_ERROR_XATTR_GET && !ret)
+		{
+			ret = lret;
 			saved_errno = errno;
 		}
-
-		flags &= ~done;
-		if (result_flags)
-			*result_flags |= done;
 	}
 
 	if (flags & COPYFILE_COPY_CAP)
 	{
-		if (copyfile_copy_cap(source, dest, st, flags, &done)
-				== COPYFILE_ERROR_CAP_GET && !ret)
+		copyfile_error_t lret = copyfile_copy_cap(source, dest, st);
+
+		if (!lret)
 		{
-			ret = COPYFILE_ERROR_CAP_GET;
+			if (result_flags)
+				*result_flags |= COPYFILE_COPY_CAP;
+		}
+		else if (lret == COPYFILE_ERROR_CAP_GET && !ret)
+		{
+			ret = lret;
 			saved_errno = errno;
 		}
-
-		flags &= ~done;
-		if (result_flags)
-			*result_flags |= done;
 	}
 
 	if (flags & COPYFILE_COPY_ACL)
 	{
-		if (copyfile_copy_acl(source, dest, st, flags, &done)
-				== COPYFILE_ERROR_ACL_GET && !ret)
+		copyfile_error_t lret = copyfile_copy_acl(source, dest, st);
+
+		if (!lret)
 		{
-			ret = COPYFILE_ERROR_ACL_GET;
+			if (result_flags)
+				*result_flags |= COPYFILE_COPY_ACL;
+		}
+		else if (lret == COPYFILE_ERROR_ACL_GET && !ret)
+		{
+			ret = lret;
 			saved_errno = errno;
 		}
-
-		flags &= ~done;
-		if (result_flags)
-			*result_flags |= done;
 	}
 
 	if (flags & COPYFILE_COPY_STAT)
 	{
 		unsigned int done = copyfile_set_stat(dest, st, flags);
 
-		flags &= ~done;
 		if (result_flags)
 			*result_flags |= done;
 	}

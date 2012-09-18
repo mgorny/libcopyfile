@@ -17,17 +17,9 @@
 #endif /*HAVE_LIBCAP*/
 
 copyfile_error_t copyfile_copy_cap(const char* source,
-		const char* dest, const struct stat* st,
-		unsigned int flags, unsigned int* result_flags)
+		const char* dest, const struct stat* st)
 {
-	if (result_flags)
-		*result_flags = 0;
-
 #ifdef HAVE_LIBCAP
-	if (!flags)
-		flags = COPYFILE_COPY_CAP;
-
-	if (flags & COPYFILE_COPY_CAP)
 	{
 		cap_t cap = 0;
 
@@ -60,9 +52,6 @@ copyfile_error_t copyfile_copy_cap(const char* source,
 		/* ENODATA - empty->empty... */
 		if (cap_set_file(dest, cap) && errno != ENODATA)
 			return COPYFILE_ERROR_CAP_SET;
-
-		if (result_flags)
-			*result_flags |= COPYFILE_COPY_CAP;
 
 		return COPYFILE_NO_ERROR;
 	}

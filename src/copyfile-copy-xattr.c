@@ -19,19 +19,11 @@
 #endif
 
 copyfile_error_t copyfile_copy_xattr(const char* source,
-		const char* dest, unsigned int flags,
-		unsigned int* result_flags)
+		const char* dest)
 {
-	if (result_flags)
-		*result_flags = 0;
-
 #ifdef HAVE_LIBATTR
-	if (!flags)
-		flags = COPYFILE_COPY_XATTR;
-
 	/* sadly, we can't use attr_copy_file() because it doesn't provide
 	 * any good way to distinguish between read and write errors. */
-	if (flags & COPYFILE_COPY_XATTR)
 	{
 		char list_buf[COPYFILE_BUFFER_SIZE / 2];
 		char data_buf[COPYFILE_BUFFER_SIZE / 2];
@@ -146,9 +138,6 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 
 		/* set COPYFILE_COPY_XATTR even if there were no regular xattrs,
 		 * failed_flags will unset it on failure */
-		if (!ret && result_flags)
-			*result_flags |= COPYFILE_COPY_XATTR;
-
 		if (ret)
 			errno = saved_errno;
 		return ret;

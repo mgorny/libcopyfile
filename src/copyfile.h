@@ -458,24 +458,11 @@ unsigned int copyfile_set_stat(const char* path,
  * of an error other than ENOTSUP (xattr unsupported on destination
  * filesystem), it will still try to copy the remaining attributes.
  *
- * The @flags parameter specifies which properties are to be copied.
- * In order to copy all the extended attributes (including special ones,
- * like ACLs), pass 0 (which will imply COPYFILE_COPY_XATTR_ALL).
- * For more fine-grained control, see the description of
- * copyfile_metadata_flag_t.
- *
- * If @result_flags is not NULL, the bit-field pointed by it will
- * contain a copy of flags explaining which operations were done
- * successfully (it will be reset to zero first). Most importantly,
- * the COPYFILE_COPY_ACL bit will be set if ACLs were copied as a side-
- * -effect of copying flags.
- *
  * Returns 0 on success, an error otherwise. errno will hold the system
  * error code.
  */
 copyfile_error_t copyfile_copy_xattr(const char* source,
-		const char* dest, unsigned int flags,
-		unsigned int* result_flags);
+		const char* dest);
 
 /**
  * Copy ACLs of a file.
@@ -484,21 +471,11 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
  * COPYFILE_ERROR_UNSUPPORTED. If source file does not support ACLs, it
  * will return COPYFILE_NO_ERROR (since there's nothing to copy).
  *
- * The @flags parameter specifies which ACLs are to be copied.
- * In order to copy all the ACL types, pass 0 (which will imply
- * COPYFILE_COPY_ACL).  For more fine-grained control, see the
- * description of copyfile_metadata_flag_t.
- *
- * If @result_flags is not NULL, the bit-field pointed by it will
- * contain a copy of flags explaining which ACL types were copied
- * successfully (it will be reset to zero first).
- *
  * Returns 0 on success, an error otherwise. errno will hold the system
  * error code.
  */
 copyfile_error_t copyfile_copy_acl(const char* source,
-		const char* dest, const struct stat* st,
-		unsigned int flags, unsigned int* result_flags);
+		const char* dest, const struct stat* st);
 
 /**
  * Copy capabilities of a file.
@@ -507,19 +484,11 @@ copyfile_error_t copyfile_copy_acl(const char* source,
  * COPYFILE_ERROR_UNSUPPORTED. If source file does not support caps, it
  * will return COPYFILE_NO_ERROR (since there's nothing to copy).
  *
- * The @flags parameter should specify COPYFILE_COPY_CAP are to be
- * copied, or just 0.
- *
- * If @result_flags is not NULL, the bit-field pointed by it will
- * have COPYFILE_COPY_CAP bit set if capabilities were copied
- * successfully (it will be reset to zero first).
- *
  * Returns 0 on success, an error otherwise. errno will hold the system
  * error code.
  */
 copyfile_error_t copyfile_copy_cap(const char* source,
-		const char* dest, const struct stat* st,
-		unsigned int flags, unsigned int* result_flags);
+		const char* dest, const struct stat* st);
 
 /**
  * Copy common file metadata.

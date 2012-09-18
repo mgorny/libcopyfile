@@ -23,17 +23,9 @@ static const acl_type_t acl_types[] =
 #endif /*HAVE_LIBACL*/
 
 copyfile_error_t copyfile_copy_acl(const char* source,
-		const char* dest, const struct stat* st,
-		unsigned int flags, unsigned int* result_flags)
+		const char* dest, const struct stat* st)
 {
-	if (result_flags)
-		*result_flags = 0;
-
 #ifdef HAVE_LIBACL
-	if (!flags)
-		flags = COPYFILE_COPY_ACL;
-
-	if (flags & COPYFILE_COPY_ACL)
 	{
 		copyfile_error_t ret = COPYFILE_NO_ERROR;
 		int saved_errno;
@@ -100,9 +92,6 @@ copyfile_error_t copyfile_copy_acl(const char* source,
 
 		if (ret)
 			errno = saved_errno;
-		else if (result_flags)
-			*result_flags |= COPYFILE_COPY_ACL;
-
 		return ret;
 	}
 #endif /*HAVE_LIBACL*/
