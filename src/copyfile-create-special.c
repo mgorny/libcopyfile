@@ -18,6 +18,7 @@
 #ifdef S_IFSOCK
 #	include <sys/socket.h>
 #	include <sys/un.h>
+#	include <string.h>
 #endif
 
 copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
