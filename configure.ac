@@ -31,10 +31,11 @@ AC_ARG_ENABLE([libattr],
 
 AS_IF([test x"$enable_xattr" != x"no"],
 [
-	AC_SEARCH_LIBS([getxattr], [attr],
+	AC_CHECK_FUNCS([lgetxattr extattr_get_link],
 	[
-		AC_DEFINE([HAVE_LIBATTR], [1],
-				[Define to 1 if you have getxattr() and friends.])
+		AC_DEFINE([HAVE_XATTR], [1],
+				[Define to 1 if any xattr support is available.])
+		break
 	])
 ])
 

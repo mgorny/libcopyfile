@@ -10,18 +10,23 @@
 #include "copyfile.h"
 #include "common.h"
 
-#ifdef HAVE_LIBATTR
+#ifdef HAVE_XATTR
 #	include <stdlib.h>
 #	include <string.h>
 #	include <errno.h>
 
-#	include <attr/xattr.h>
+#	ifdef HAVE_LGETXATTR /* GNU/Linux */
+#		include <attr/xattr.h>
+#	endif
+#	ifdef HAVE_EXTATTR_GET_LINK /* BSD */
+#		include <sys/extattr.h>
+#	endif
 #endif
 
 copyfile_error_t copyfile_copy_xattr(const char* source,
 		const char* dest, const struct stat* st)
 {
-#ifdef HAVE_LIBATTR
+#ifdef HAVE_XATTR
 	/* sadly, we can't use attr_copy_file() because it doesn't provide
 	 * any good way to distinguish between read and write errors. */
 	{
@@ -37,16 +42,26 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 
 		ssize_t list_len;
 
-		const char* n;
+		char* n;
 
 		copyfile_error_t ret = COPYFILE_NO_ERROR;
 		int saved_errno;
 
+#ifdef HAVE_EXTATTR_GET_LINK
+		unsigned char next_len;
+#endif
+
+#ifdef HAVE_LGETXATTR
 		list_len = llistxattr(source, 0, 0);
+#endif
+#ifdef HAVE_EXTATTR_GET_LINK
+		list_len = extattr_list_link(source, EXTATTR_NAMESPACE_USER,
+				0, 0);
+#endif
 		if (list_len == -1)
 		{
 			/* if source fs doesn't support them, it doesn't have them. */
-			if (errno == ENOTSUP)
+			if (errno == EOPNOTSUPP)
 				return COPYFILE_NO_ERROR;
 			else
 				return COPYFILE_ERROR_XATTR_LIST;
@@ -54,13 +69,21 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 
 		if (list_len > list_buf_size)
 		{
-			list_bufp = malloc(list_len);
+			/* On BSD, the list is not null-terminated,
+			 * so we need one more cell for NULL. */
+			list_bufp = malloc(list_len + 1);
 			if (!list_bufp)
 				return COPYFILE_ERROR_MALLOC;
 			list_buf_size = list_len;
 		}
 
+#ifdef HAVE_LGETXATTR
 		list_len = llistxattr(source, list_bufp, list_buf_size);
+#endif
+#ifdef HAVE_EXTATTR_GET_LINK
+		list_len = extattr_list_link(source, EXTATTR_NAMESPACE_USER,
+				list_bufp, list_buf_size);
+#endif
 		if (list_len == -1)
 		{
 			if (list_buf_size > initial_buf_size)
@@ -69,14 +92,38 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 			return COPYFILE_ERROR_XATTR_LIST;
 		}
 
-		for (n = list_bufp; n < &list_bufp[list_len]; n = strchr(n, 0) + 1)
+		n = list_bufp;
+#ifdef HAVE_EXTATTR_GET_LINK
+		/* This is safe since buffer will always have at least a few
+		 * bytes. */
+		next_len = *n++;
+#endif
+
+		for (; n < &list_bufp[list_len]; n = strchr(n, 0) + 1)
 		{
 			ssize_t data_len;
 
+#ifdef HAVE_EXTATTR_GET_LINK
+			/* On BSD, the list consists of pascal strings...
+			 * let's null-terminate it. */
+			unsigned int next_len_tmp = n[next_len];
+			n[next_len] = 0; /* null-terminate */
+			next_len = next_len_tmp;
+#endif
+
+#ifdef HAVE_LGETXATTR
+			/* On Linux, namespace is stored in the attribute name. */
 			if (strcmp(n, "user.") && strcmp(n, "trusted."))
 				continue;
+#endif
 
+#ifdef HAVE_LGETXATTR
 			data_len = lgetxattr(source, n, 0, 0);
+#endif
+#ifdef HAVE_EXTATTR_GET_LINK
+			data_len = extattr_get_link(source, EXTATTR_NAMESPACE_USER,
+					n, 0, 0);
+#endif
 			if (data_len == -1)
 			{
 				/* return the first error
@@ -106,7 +153,13 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 				data_buf_size = data_len;
 			}
 
+#ifdef HAVE_LGETXATTR
 			data_len = lgetxattr(source, n, data_bufp, data_buf_size);
+#endif
+#ifdef HAVE_EXTATTR_GET_LINK
+			data_len = extattr_get_link(source, EXTATTR_NAMESPACE_USER,
+					n, data_bufp, data_buf_size);
+#endif
 			if (data_len == -1)
 			{
 				if (!ret)
@@ -117,7 +170,13 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 				continue;
 			}
 
+#ifdef HAVE_LGETXATTR
 			if (lsetxattr(dest, n, data_bufp, data_len, 0))
+#endif
+#ifdef HAVE_EXTATTR_GET_LINK
+			if (extattr_set_link(dest, EXTATTR_NAMESPACE_USER, n,
+					data_bufp, data_len) != data_len)
+#endif
 			{
 				if (!ret)
 				{
@@ -142,7 +201,7 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 			errno = saved_errno;
 		return ret;
 	}
-#endif /*HAVE_LIBATTR*/
+#endif /*HAVE_ATTR*/
 
 	return COPYFILE_ERROR_UNSUPPORTED;
 }
