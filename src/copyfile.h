@@ -458,11 +458,14 @@ unsigned int copyfile_set_stat(const char* path,
  * of an error other than ENOTSUP (xattr unsupported on destination
  * filesystem), it will still try to copy the remaining attributes.
  *
+ * If lstat() data for the file is available, it should be passed
+ * as @st. Otherwise, @st should be NULL.
+ *
  * Returns 0 on success, an error otherwise. errno will hold the system
  * error code.
  */
 copyfile_error_t copyfile_copy_xattr(const char* source,
-		const char* dest);
+		const char* dest, const struct stat* st);
 
 /**
  * Copy ACLs of a file.
@@ -470,6 +473,9 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
  * If the ACL support is disabled, it will return
  * COPYFILE_ERROR_UNSUPPORTED. If source file does not support ACLs, it
  * will return COPYFILE_NO_ERROR (since there's nothing to copy).
+ *
+ * If lstat() data for the file is available, it should be passed
+ * as @st. Otherwise, @st should be NULL.
  *
  * Returns 0 on success, an error otherwise. errno will hold the system
  * error code.
@@ -483,6 +489,9 @@ copyfile_error_t copyfile_copy_acl(const char* source,
  * If the capability support is disabled, it will return
  * COPYFILE_ERROR_UNSUPPORTED. If source file does not support caps, it
  * will return COPYFILE_NO_ERROR (since there's nothing to copy).
+ *
+ * If lstat() data for the file is available, it should be passed
+ * as @st. Otherwise, @st should be NULL.
  *
  * Returns 0 on success, an error otherwise. errno will hold the system
  * error code.

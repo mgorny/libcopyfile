@@ -19,7 +19,7 @@
 #endif
 
 copyfile_error_t copyfile_copy_xattr(const char* source,
-		const char* dest)
+		const char* dest, const struct stat* st)
 {
 #ifdef HAVE_LIBATTR
 	/* sadly, we can't use attr_copy_file() because it doesn't provide

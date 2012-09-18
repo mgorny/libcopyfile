@@ -55,7 +55,7 @@ copyfile_error_t copyfile_copy_metadata(const char* source,
 
 	if (flags & COPYFILE_COPY_XATTR)
 	{
-		copyfile_error_t lret = copyfile_copy_xattr(source, dest);
+		copyfile_error_t lret = copyfile_copy_xattr(source, dest, st);
 
 		if (!lret)
 		{
