@@ -51,8 +51,12 @@ copyfile_error_t copyfile_copy_cap(const char* source,
 
 		/* ENODATA - empty->empty... */
 		if (cap_set_file(dest, cap) && errno != ENODATA)
+		{
+			cap_free(cap);
 			return COPYFILE_ERROR_CAP_SET;
+		}
 
+		cap_free(cap);
 		return COPYFILE_NO_ERROR;
 	}
 #endif /*HAVE_LIBCAP*/
