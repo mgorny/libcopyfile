@@ -17,6 +17,7 @@ copyfile_error_t copyfile_link_file(const char* source,
 		const char* dest, unsigned int* result_flags,
 		copyfile_callback_t callback, void* callback_data)
 {
+#ifdef HAVE_LINK
 	if (!link(source, dest))
 	{
 		if (result_flags)
@@ -26,6 +27,7 @@ copyfile_error_t copyfile_link_file(const char* source,
 	}
 	else if (errno != EXDEV && errno != EPERM)
 		return COPYFILE_ERROR_LINK;
+#endif
 
 	return copyfile_archive_file(source, dest, 0,
 			COPYFILE_COPY_ALL_METADATA, result_flags,
