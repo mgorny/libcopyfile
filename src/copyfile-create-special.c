@@ -65,7 +65,7 @@ copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
 				ret = mkfifo(path, perm_file);
 				err = COPYFILE_ERROR_MKFIFO;
 #	else /*!HAVE_MKFIFO*/
-				err = COPYFILE_UNSUPPORTED;
+				err = COPYFILE_ERROR_UNSUPPORTED;
 #	endif /*HAVE_MKFIFO*/
 				break;
 #endif /*S_IFIFO*/
@@ -75,7 +75,7 @@ copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
 				ret = mknod(path, ftype | perm_file, devid);
 				err = COPYFILE_ERROR_MKNOD;
 #	else /*!HAVE_MKNOD*/
-				err = COPYFILE_UNSUPPORTED;
+				err = COPYFILE_ERROR_UNSUPPORTED;
 #	endif /*HAVE_MKNOD*/
 				break;
 #endif /*S_IFBLK*/
@@ -85,7 +85,7 @@ copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
 				ret = mknod(path, ftype | perm_file, devid);
 				err = COPYFILE_ERROR_MKNOD;
 #	else /*!HAVE_MKNOD*/
-				err = COPYFILE_UNSUPPORTED;
+				err = COPYFILE_ERROR_UNSUPPORTED;
 #	endif /*HAVE_MKNOD*/
 				break;
 #endif /*S_IFCHR*/
