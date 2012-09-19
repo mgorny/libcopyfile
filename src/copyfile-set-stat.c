@@ -36,12 +36,16 @@ static unsigned int copy_owner(const char* path,
 
 #	else /*!HAVE_LCHOWN*/
 
+#		ifdef S_IFLNK
+
 	/* don't try to chown() a symbolic link */
-	if (!S_ISLNK(st->st_mode))
-	{
-		if (!chown(path, new_user, new_group))
-			return flags & COPYFILE_COPY_OWNER;
-	}
+	if (S_ISLNK(st->st_mode))
+		return 0;
+
+#		endif /*S_IFLNK*/
+
+	if (!chown(path, new_user, new_group))
+		return flags & COPYFILE_COPY_OWNER;
 
 #	endif /*HAVE_LCHOWN*/
 
@@ -55,7 +59,15 @@ static unsigned int copy_mode(const char* path,
 {
 #ifdef HAVE_FCHMODAT
 
+#	ifdef S_IFLNK
+
 	int at_flags = S_ISLNK(st->st_mode) ? AT_SYMLINK_NOFOLLOW : 0;
+
+#	else /*!S_IFLNK*/
+
+	int at_flags = 0;
+
+#	endif /*S_IFLNK*/
 
 	if (!fchmodat(AT_FDCWD, path, st->st_mode & all_perm_bits,
 				at_flags))
@@ -63,12 +75,16 @@ static unsigned int copy_mode(const char* path,
 
 #else /*!HAVE_FCHMODAT*/
 
+#	ifdef S_IFLNK
+
 	/* don't try to chmod() a symbolic link */
-	if (!S_ISLNK(st->st_mode))
-	{
-		if (!chmod(path, st->st_mode & all_perm_bits))
-			return COPYFILE_COPY_MODE;
-	}
+	if (S_ISLNK(st->st_mode))
+		return 0;
+
+#	endif /*S_IFLNK*/
+
+	if (!chmod(path, st->st_mode & all_perm_bits))
+		return COPYFILE_COPY_MODE;
 
 #endif /*HAVE_FCHMODAT*/
 
@@ -80,12 +96,14 @@ static unsigned int copy_times(const char* path,
 {
 #ifndef HAVE_UTIMENSAT
 #	ifndef HAVE_LUTIMES
+#		ifdef S_IFLNK
 
 	if (S_ISLNK(st->st_mode))
 		return 0;
 
-#	endif
-#endif
+#		endif /*S_IFLNK*/
+#	endif /*HAVE_LUTIMES*/
+#endif /*HAVE_UTIMENSAT*/
 
 #ifdef HAVE_UTIMES
 
@@ -108,8 +126,12 @@ static unsigned int copy_times(const char* path,
 			t[1].tv_nsec = UTIME_OMIT;
 
 		{
+#	ifdef S_IFLNK
 			int at_flags = S_ISLNK(st->st_mode)
 				? AT_SYMLINK_NOFOLLOW : 0;
+#	else /*!S_IFLNK*/
+			int at_flags = 0;
+#	endif /*S_IFLNK*/
 
 			if (!utimensat(AT_FDCWD, path, t, at_flags))
 				return (flags & COPYFILE_COPY_TIMES);

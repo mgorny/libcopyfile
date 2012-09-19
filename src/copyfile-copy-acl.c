@@ -33,6 +33,7 @@ copyfile_error_t copyfile_copy_acl(const char* source,
 		int i;
 
 #ifndef HAVE_ACL_GET_LINK_NP
+#	ifdef S_IFLNK
 		{
 			struct stat buf;
 
@@ -47,6 +48,7 @@ copyfile_error_t copyfile_copy_acl(const char* source,
 			if (S_ISLNK(st->st_mode))
 				return COPYFILE_NO_ERROR;
 		}
+#	endif /*S_IFLNK*/
 #endif /*!HAVE_ACL_GET_LINK_NP*/
 
 		for (i = 0; i < 2; ++i)

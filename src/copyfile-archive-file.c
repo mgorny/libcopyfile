@@ -22,8 +22,13 @@ copyfile_error_t copyfile_archive_file(const char* source,
 
 	if (!st)
 	{
+#ifdef S_IFLNK
 		if (lstat(source, &buf))
 			return COPYFILE_ERROR_STAT;
+#else
+		if (stat(source, &buf))
+			return COPYFILE_ERROR_STAT;
+#endif
 
 		st = &buf;
 	}

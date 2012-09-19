@@ -28,8 +28,13 @@ copyfile_error_t copyfile_copy_metadata(const char* source,
 		*result_flags = 0;
 	if (!st)
 	{
+#ifdef S_IFLNK
 		if (lstat(source, &buf))
 			return COPYFILE_ERROR_STAT;
+#else
+		if (stat(source, &buf))
+			return COPYFILE_ERROR_STAT;
+#endif
 
 		st = &buf;
 	}
