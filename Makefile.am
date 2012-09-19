@@ -15,7 +15,7 @@ src_libcopyfile_la_SOURCES = \
 	src/copyfile-link-file.c \
 	src/copyfile-move-file.c \
 	src/common.h src/copyfile.h
-src_libcopyfile_la_LDFLAGS = -version-info 0:0:0
+src_libcopyfile_la_LDFLAGS = -no-undefined -version-info 0:0:0
 
 EXTRA_DIST = NEWS
 NEWS: configure.ac Makefile.am
