@@ -61,20 +61,32 @@ copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
 				break;
 #ifdef S_IFIFO
 			case S_IFIFO:
+#	ifdef HAVE_MKFIFO
 				ret = mkfifo(path, perm_file);
 				err = COPYFILE_ERROR_MKFIFO;
+#	else /*!HAVE_MKFIFO*/
+				err = COPYFILE_UNSUPPORTED;
+#	endif /*HAVE_MKFIFO*/
 				break;
 #endif /*S_IFIFO*/
 #ifdef S_IFBLK
 			case S_IFBLK:
+#	ifdef HAVE_MKNOD
 				ret = mknod(path, ftype | perm_file, devid);
 				err = COPYFILE_ERROR_MKNOD;
+#	else /*!HAVE_MKNOD*/
+				err = COPYFILE_UNSUPPORTED;
+#	endif /*HAVE_MKNOD*/
 				break;
 #endif /*S_IFBLK*/
 #ifdef S_IFCHR
 			case S_IFCHR:
+#	ifdef HAVE_MKNOD
 				ret = mknod(path, ftype | perm_file, devid);
 				err = COPYFILE_ERROR_MKNOD;
+#	else /*!HAVE_MKNOD*/
+				err = COPYFILE_UNSUPPORTED;
+#	endif /*HAVE_MKNOD*/
 				break;
 #endif /*S_IFCHR*/
 #ifdef S_IFSOCK
