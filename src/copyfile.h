@@ -572,6 +572,9 @@ copyfile_error_t copyfile_archive_file(const char* source,
 /**
  * Hard-link the given file to a new location, fallback to copy.
  *
+ * This function should be used whenever a copy of the file is necessary
+ * in the new location and it is not intended to be written to.
+ *
  * The @source file must not be a directory. The @dest argument has to
  * be a full path to the new file and not just a directory.
  *
