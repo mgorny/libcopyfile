@@ -15,6 +15,7 @@ src_libcopyfile_la_SOURCES = \
 	src/copyfile-archive-file.c \
 	src/copyfile-link-file.c \
 	src/copyfile-move-file.c \
+	src/copyfile-error-message.c \
 	src/common.h src/copyfile.h
 src_libcopyfile_la_LDFLAGS = -no-undefined -version-info 0:0:0
 

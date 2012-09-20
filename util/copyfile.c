@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
 			return 0;
 		else
 		{
-			perror("copyfile_copy_file() failed");
+			perror(copyfile_error_message(ret));
 			return 1;
 		}
 	}

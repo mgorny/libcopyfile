@@ -275,6 +275,17 @@ typedef int (*copyfile_callback_t)(copyfile_error_t state, mode_t type,
 		copyfile_progress_t progress, void* data);
 
 /**
+ * Get a textual message for an error.
+ *
+ * This function does not modify errno.
+ *
+ * Returns a null-terminated string. If the error code is invalid,
+ * an appropriate string will be returned. This function will never
+ * return NULL.
+ */
+const char* copyfile_error_message(copyfile_error_t err);
+
+/**
  * Copy the contents of an input stream onto an output stream.
  *
  * This function takes no special care of the file type -- it just reads
