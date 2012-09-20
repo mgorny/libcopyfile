@@ -12,21 +12,45 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#ifdef HAVE_GETOPT_LONG
+#	include <getopt.h>
+#endif
+
 static const char* const copyfile_opts = "hV";
+
+#ifdef HAVE_GETOPT_LONG
+
+static const struct option copyfile_long_opts[] =
+{
+	{ "help", no_argument, 0, 'h' },
+	{ "version", no_argument, 0, 'V' },
+
+	{ 0, 0, 0, 0 }
+};
+
+#endif /*HAVE_GETOPT_LONG*/
+
 static const char* const copyfile_help_f =
 "Usage: %s [OPTIONS] SOURCE DEST\n"
 "\n"
 "Copy a single file SOURCE to a new full path DEST. DEST must not\n"
 "be just a directory, it has to contain the filename as well.\n"
 "\n"
-"  -h                    print help message\n"
-"  -V                    print program version\n";
+"  -h, --help            print help message\n"
+"  -V, --version         print program version\n";
 
 int main(int argc, char* argv[])
 {
 	while (1)
 	{
-		int opt = getopt(argc, argv, copyfile_opts);
+		int opt;
+
+#ifdef HAVE_GETOPT_LONG
+		opt = getopt_long(argc, argv, copyfile_opts,
+				copyfile_long_opts, 0);
+#else
+		opt = getopt(argc, argv, copyfile_opts);
+#endif
 
 		if (opt == -1)
 			break;
