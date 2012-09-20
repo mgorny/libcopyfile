@@ -16,13 +16,14 @@
 #	include <getopt.h>
 #endif
 
-static const char* const copyfile_opts = "ahV";
+static const char* const copyfile_opts = "alhV";
 
 #ifdef HAVE_GETOPT_LONG
 
 static const struct option copyfile_long_opts[] =
 {
 	{ "archive", no_argument, 0, 'a' },
+	{ "link", no_argument, 0, 'l' },
 
 	{ "help", no_argument, 0, 'h' },
 	{ "version", no_argument, 0, 'V' },
@@ -39,6 +40,8 @@ static const char* const copyfile_help_f =
 "be just a directory, it has to contain the filename as well.\n"
 "\n"
 "  -a, --archive         copy file metadata as well\n"
+"  -l, --link            try to create a hard link first, fall back to copy\n"
+"                        (implies --archive)\n"
 "\n"
 "  -h, --help            print help message\n"
 "  -V, --version         print program version\n";
@@ -46,6 +49,7 @@ static const char* const copyfile_help_f =
 int main(int argc, char* argv[])
 {
 	int opt_archive = 0;
+	int opt_link = 0;
 
 	while (1)
 	{
@@ -65,6 +69,9 @@ int main(int argc, char* argv[])
 		{
 			case 'a':
 				opt_archive = 1;
+				break;
+			case 'l':
+				opt_link = 1;
 				break;
 
 			case 'h':
@@ -100,7 +107,9 @@ int main(int argc, char* argv[])
 
 		int ret;
 
-		if (opt_archive)
+		if (opt_link)
+			ret = copyfile_link_file(source, dest, 0, 0, 0);
+		else if (opt_archive)
 			ret = copyfile_archive_file(source, dest, 0, 0, 0, 0, 0);
 		else
 			ret = copyfile_copy_file(source, dest, 0, 0, 0);
