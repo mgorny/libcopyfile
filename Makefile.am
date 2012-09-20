@@ -1,3 +1,4 @@
+bin_PROGRAMS = util/copyfile
 lib_LTLIBRARIES = src/libcopyfile.la
 
 src_libcopyfile_la_SOURCES = \
@@ -16,6 +17,11 @@ src_libcopyfile_la_SOURCES = \
 	src/copyfile-move-file.c \
 	src/common.h src/copyfile.h
 src_libcopyfile_la_LDFLAGS = -no-undefined -version-info 0:0:0
+
+util_copyfile_SOURCES = \
+	util/copyfile.c
+util_copyfile_CPPFLAGS = -Isrc
+util_copyfile_LDADD = src/libcopyfile.la
 
 EXTRA_DIST = NEWS
 NEWS: configure.ac Makefile.am

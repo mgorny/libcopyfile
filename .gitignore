@@ -13,6 +13,7 @@ Makefile.in
 /libtool
 /m4
 /stamp-h1
+/util/copyfile
 
 *.la
 *.lo
