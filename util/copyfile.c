@@ -16,12 +16,14 @@
 #	include <getopt.h>
 #endif
 
-static const char* const copyfile_opts = "hV";
+static const char* const copyfile_opts = "ahV";
 
 #ifdef HAVE_GETOPT_LONG
 
 static const struct option copyfile_long_opts[] =
 {
+	{ "archive", no_argument, 0, 'a' },
+
 	{ "help", no_argument, 0, 'h' },
 	{ "version", no_argument, 0, 'V' },
 
@@ -36,11 +38,15 @@ static const char* const copyfile_help_f =
 "Copy a single file SOURCE to a new full path DEST. DEST must not\n"
 "be just a directory, it has to contain the filename as well.\n"
 "\n"
+"  -a, --archive         copy file metadata as well\n"
+"\n"
 "  -h, --help            print help message\n"
 "  -V, --version         print program version\n";
 
 int main(int argc, char* argv[])
 {
+	int opt_archive = 0;
+
 	while (1)
 	{
 		int opt;
@@ -57,6 +63,10 @@ int main(int argc, char* argv[])
 
 		switch (opt)
 		{
+			case 'a':
+				opt_archive = 1;
+				break;
+
 			case 'h':
 				printf(copyfile_help_f, argv[0]);
 				return 0;
@@ -85,9 +95,16 @@ int main(int argc, char* argv[])
 	}
 
 	{
+		const char* source = argv[optind];
+		const char* dest = argv[optind+1];
+
 		int ret;
 
-		ret = copyfile_copy_file(argv[optind], argv[optind+1], 0, 0, 0);
+		if (opt_archive)
+			ret = copyfile_archive_file(source, dest, 0, 0, 0, 0, 0);
+		else
+			ret = copyfile_copy_file(source, dest, 0, 0, 0);
+
 		if (!ret)
 			return 0;
 		else
