@@ -19,19 +19,56 @@ copyfile_error_t copyfile_move_file(const char* source,
 		copyfile_callback_t callback, void* callback_data)
 {
 	copyfile_error_t ret;
+	copyfile_progress_t progress;
 
-	if (!rename(source, dest))
+	progress.move.source = source;
+
+	if (callback && callback(COPYFILE_NO_ERROR, COPYFILE_MOVE,
+				progress, callback_data, 0))
+		return COPYFILE_ABORTED;
+
+	while (1)
 	{
-		if (result_flags)
-			*result_flags = COPYFILE_COPY_ALL_METADATA;
-		/* XXX: callback */
-		return COPYFILE_NO_ERROR;
-	}
-	else if (errno != EXDEV)
-		return COPYFILE_ERROR_RENAME;
+		if (!rename(source, dest))
+		{
+			if (result_flags)
+				*result_flags = COPYFILE_COPY_ALL_METADATA;
 
-	if (unlink(dest) && errno != ENOENT)
-		return COPYFILE_ERROR_UNLINK_DEST;
+			if (callback && callback(COPYFILE_EOF, COPYFILE_MOVE,
+					progress, callback_data, 0))
+				return COPYFILE_ABORTED;
+
+			return COPYFILE_NO_ERROR;
+		}
+		else if (callback)
+		{
+			if (callback(COPYFILE_ERROR_RENAME, COPYFILE_MOVE,
+						progress, callback_data,
+						errno != EXDEV))
+				return COPYFILE_ERROR_RENAME;
+			else if (errno == EXDEV)
+				break;
+		}
+		else /* default error handling */
+		{
+			if (errno == EXDEV)
+				break;
+			else
+				return COPYFILE_ERROR_RENAME;
+		}
+	}
+
+	while (unlink(dest) && errno != ENOENT)
+	{
+		if (callback)
+		{
+			if (callback(COPYFILE_ERROR_UNLINK_DEST, COPYFILE_MOVE,
+						progress, callback_data, 1))
+				return COPYFILE_ERROR_UNLINK_DEST;
+		}
+		else
+			return COPYFILE_ERROR_UNLINK_DEST;
+	}
 
 	ret = copyfile_archive_file(source, dest, 0,
 			COPYFILE_COPY_ALL_METADATA, result_flags,
@@ -39,8 +76,17 @@ copyfile_error_t copyfile_move_file(const char* source,
 
 	if (!ret)
 	{
-		if (unlink(source))
-			return COPYFILE_ERROR_UNLINK_SOURCE;
+		while (unlink(source))
+		{
+			if (callback)
+			{
+				if (callback(COPYFILE_ERROR_UNLINK_SOURCE,
+							COPYFILE_MOVE, progress, callback_data, 1))
+					ret = COPYFILE_ERROR_UNLINK_SOURCE;
+			}
+			else
+				ret = COPYFILE_ERROR_UNLINK_SOURCE;
+		}
 	}
 
 	return ret;

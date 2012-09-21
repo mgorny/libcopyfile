@@ -192,6 +192,11 @@ typedef enum
 	 * and thus no file type information was obtained.
 	 */
 	COPYFILE_HARDLINK,
+	/**
+	 * A special constant stating that move/rename is being/was done
+	 * and thus no file type information was obtained.
+	 */
+	COPYFILE_MOVE,
 
 	COPYFILE_FILETYPE_MAX
 } copyfile_filetype_t;
@@ -260,6 +265,22 @@ typedef union
 		 */
 		const char* target;
 	} hardlink;
+
+	/**
+	 * Move/rename specific information.
+	 *
+	 * It is available in both EOF and non-EOF callbacks.
+	 */
+	struct
+	{
+		/**
+		 * The source file path.
+		 *
+		 * It can be used to obtain more file information whenever
+		 * necessary.
+		 */
+		const char* source;
+	} move;
 
 	/**
 	 * Device identifier, in case of device file copy.
@@ -679,6 +700,15 @@ copyfile_error_t copyfile_link_file(const char* source,
  * If @callback is non-NULL, it will be used to report progress and/or
  * errors. The @callback_data will be passed to it. For more details,
  * see copyfile_callback_t description.
+ *
+ * Note that the '0' callback can be called twice -- once with
+ * COPYFILE_MOVE and then with another type if rename() fails.
+ * The COPYFILE_EOF callback will be called only once.
+ *
+ * The callback will be used to report both rename() and copy errors.
+ * In case of the former, 0 (retry) return with EXDEV will cause
+ * the function to try regular copy. The 1 (abort) code will always
+ * cause immediate failure.
  *
  * If @callback is NULL, default error handling will be used. The EINTR
  * error will be retried indefinitely, and other errors will cause
