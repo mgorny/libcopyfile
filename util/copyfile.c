@@ -53,6 +53,10 @@ static const char* const copyfile_help_options =
 "  -V, --version         print program version\n";
 
 static const char* const ecma_prev_line = "\033[A";
+static const char* const progress_bar =
+		"=================================";
+static const char* const progress_spaces =
+		"                                 ";
 
 static int progress_callback(copyfile_error_t state,
 		copyfile_filetype_t ftype, copyfile_progress_t prog,
@@ -60,18 +64,23 @@ static int progress_callback(copyfile_error_t state,
 {
 	if (ftype == COPYFILE_REGULAR)
 	{
-		unsigned int perc;
+		unsigned int perc, bar_blocks;
 
 		prog.data.offset >>= 10;
 		prog.data.size >>= 10;
 
 		perc = (prog.data.offset * 100) / prog.data.size;
+		bar_blocks = perc / 3;
 
 		if (state == COPYFILE_EOF || prog.data.offset != 0)
 			fputs(ecma_prev_line, stderr);
 
-		fprintf(stderr, "%7lu / %7lu KiB (%3u%%)\n",
-				prog.data.offset, prog.data.size, perc);
+		fprintf(stderr, "%7lu / %7lu KiB (%3u%%) [%s%c%s]\n",
+				prog.data.offset, prog.data.size, perc,
+				progress_bar + 33 - bar_blocks,
+				state != COPYFILE_EOF ? '>' : '=',
+				progress_spaces + bar_blocks);
+
 	}
 
 	return default_return;
