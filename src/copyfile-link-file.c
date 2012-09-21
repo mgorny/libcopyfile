@@ -18,15 +18,46 @@ copyfile_error_t copyfile_link_file(const char* source,
 		copyfile_callback_t callback, void* callback_data)
 {
 #ifdef HAVE_LINK
-	if (!link(source, dest))
 	{
-		if (result_flags)
-			*result_flags = COPYFILE_COPY_ALL_METADATA;
-		/* XXX: callback */
-		return COPYFILE_NO_ERROR;
+		copyfile_progress_t progress;
+
+		progress.hardlink.target = source;
+
+		if (callback && callback(COPYFILE_NO_ERROR, COPYFILE_HARDLINK,
+					progress, callback_data, 0))
+			return COPYFILE_ABORTED;
+
+		while (1)
+		{
+			if (!link(source, dest))
+			{
+				if (result_flags)
+					*result_flags = COPYFILE_COPY_ALL_METADATA;
+
+				if (callback && callback(COPYFILE_EOF, COPYFILE_HARDLINK,
+							progress, callback_data, 0))
+					return COPYFILE_ABORTED;
+
+				return COPYFILE_NO_ERROR;
+			}
+			else if (callback)
+			{
+				if (callback(COPYFILE_ERROR_LINK, COPYFILE_HARDLINK,
+							progress, callback_data,
+							errno != EXDEV && errno != EPERM))
+					return COPYFILE_ERROR_LINK;
+				else if (errno == EXDEV || errno == EPERM)
+					break;
+			}
+			else /* default error handling */
+			{
+				if (errno == EXDEV || errno == EPERM)
+					break;
+				else
+					return COPYFILE_ERROR_LINK;
+			}
+		}
 	}
-	else if (errno != EXDEV && errno != EPERM)
-		return COPYFILE_ERROR_LINK;
 #endif
 
 	return copyfile_archive_file(source, dest, 0,

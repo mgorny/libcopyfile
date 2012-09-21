@@ -187,6 +187,12 @@ typedef enum
 	COPYFILE_BLKDEV,
 	COPYFILE_UNIXSOCK,
 
+	/**
+	 * A special constant stating that hardlink is being/was created
+	 * and thus no file type information was obtained.
+	 */
+	COPYFILE_HARDLINK,
+
 	COPYFILE_FILETYPE_MAX
 } copyfile_filetype_t;
 
@@ -238,6 +244,22 @@ typedef union
 		 */
 		const char* target;
 	} symlink;
+
+	/**
+	 * Hard-link specific information.
+	 *
+	 * It is available in both EOF and non-EOF callbacks.
+	 */
+	struct
+	{
+		/**
+		 * The hard-link target.
+		 *
+		 * It can be used to obtain more file information whenever
+		 * necessary.
+		 */
+		const char* target;
+	} hardlink;
 
 	/**
 	 * Device identifier, in case of device file copy.
@@ -618,6 +640,15 @@ copyfile_error_t copyfile_archive_file(const char* source,
  * If @callback is non-NULL, it will be used to report progress and/or
  * errors. The @callback_data will be passed to it. For more details,
  * see copyfile_callback_t description.
+ *
+ * Note that the '0' callback can be called twice -- once with
+ * COPYFILE_HARDLINK and then with another type if link() failed.
+ * The COPYFILE_EOF callback will be called only once.
+ *
+ * The callback will be used to report both link() and copy errors.
+ * In case of the former, 0 (retry) return with EXDEV and EPERM will
+ * cause the function to try regular copy. The 1 (abort) code will
+ * always cause immediate failure.
  *
  * If @callback is NULL, default error handling will be used. The EINTR
  * error will be retried indefinitely, and other errors will cause
