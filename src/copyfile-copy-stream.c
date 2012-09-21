@@ -33,7 +33,7 @@ copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 
 		if (callback)
 		{
-			if (++opcount >= COPYFILE_CALLBACK_OPCOUNT)
+			if (!opcount)
 			{
 				if (callback(COPYFILE_NO_ERROR, COPYFILE_REGULAR,
 							progress, callback_data, 0))
@@ -42,8 +42,10 @@ copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 						*offset_store = progress.data.offset;
 					return COPYFILE_ABORTED;
 				}
-				opcount = 0;
 			}
+
+			if (++opcount >= COPYFILE_CALLBACK_OPCOUNT)
+				opcount = 0;
 		}
 
 		rd = read(fd_in, bufp, sizeof(buf));
