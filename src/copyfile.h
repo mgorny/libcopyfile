@@ -173,6 +173,24 @@ typedef enum
 } copyfile_metadata_flag_t;
 
 /**
+ * Constants for file types.
+ *
+ * These constants are always available, even if a particular file type
+ * is not supported by the platform.
+ */
+typedef enum
+{
+	COPYFILE_REGULAR,
+	COPYFILE_SYMLINK,
+	COPYFILE_FIFO,
+	COPYFILE_CHRDEV,
+	COPYFILE_BLKDEV,
+	COPYFILE_UNIXSOCK,
+
+	COPYFILE_FILETYPE_MAX
+} copyfile_filetype_t;
+
+/**
  * An uniform type for callback progress information.
  */
 typedef union
@@ -239,10 +257,9 @@ typedef union
  * - at the end of copying,
  * - in case of an error.
  *
- * In any of those cases, the @type parameter will hold the file type,
- * in form of a mode_t constant (as returned by stat()). The @progress
- * parameter carries detailed progress information, and @data carries
- * any user-provided data.
+ * In any of those cases, the @type parameter will hold the file type.
+ * The @progress parameter carries detailed progress information,
+ * and @data carries any user-provided data.
  *
  * At the start of copying and during the process, the callback is
  * called with @state == COPYFILE_NO_ERROR. At the end of file, @state
@@ -271,8 +288,9 @@ typedef union
  * value in the callback or be aware that the errno after the function
  * return will be set in callback.
  */
-typedef int (*copyfile_callback_t)(copyfile_error_t state, mode_t type,
-		copyfile_progress_t progress, void* data);
+typedef int (*copyfile_callback_t)(copyfile_error_t state,
+		copyfile_filetype_t type, copyfile_progress_t progress,
+		void* data);
 
 /**
  * Get a textual message for an error.

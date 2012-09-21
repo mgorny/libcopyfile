@@ -53,7 +53,8 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 	copyfile_progress_t progress;
 
 	progress.symlink.length = expected_length;
-	if (callback && callback(COPYFILE_NO_ERROR, S_IFLNK, progress, callback_data))
+	if (callback && callback(COPYFILE_NO_ERROR, COPYFILE_SYMLINK,
+				progress, callback_data))
 		return COPYFILE_ABORTED;
 
 	if (expected_length < buf_size)
@@ -71,8 +72,8 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 					if (callback)
 					{
 						progress.symlink.target = buf;
-						if (callback(COPYFILE_EOF, S_IFLNK, progress,
-									callback_data))
+						if (callback(COPYFILE_EOF, COPYFILE_SYMLINK,
+									progress, callback_data))
 							return COPYFILE_ABORTED;
 					}
 
@@ -80,8 +81,8 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 				}
 
 				/* does the user want to retry? */
-				if (!callback || callback(ret, S_IFLNK, progress,
-							callback_data))
+				if (!callback || callback(ret, COPYFILE_SYMLINK,
+							progress, callback_data))
 					return ret;
 			}
 			else
@@ -111,7 +112,8 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 				ret = COPYFILE_ERROR_MALLOC;
 
 				/* retry? */
-				if (callback && !callback(ret, S_IFLNK, progress, callback_data))
+				if (callback && !callback(ret, COPYFILE_SYMLINK,
+							progress, callback_data))
 					continue;
 
 				if (!buf) /* avoid freeing in the less likely branch */
@@ -127,8 +129,8 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 				if (callback)
 				{
 					progress.symlink.target = buf;
-					if (callback(COPYFILE_EOF, S_IFLNK, progress,
-								callback_data))
+					if (callback(COPYFILE_EOF, COPYFILE_SYMLINK,
+								progress, callback_data))
 						return COPYFILE_ABORTED;
 				}
 				break;
@@ -151,7 +153,8 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 			else
 			{
 				/* does the user want to retry? */
-				if (!callback && callback(ret, S_IFLNK, progress, callback_data))
+				if (!callback && callback(ret, COPYFILE_SYMLINK,
+							progress, callback_data))
 					break;
 			}
 		}

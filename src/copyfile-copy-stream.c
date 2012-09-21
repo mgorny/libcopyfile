@@ -35,7 +35,8 @@ copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 		{
 			if (++opcount >= COPYFILE_CALLBACK_OPCOUNT)
 			{
-				if (callback(COPYFILE_NO_ERROR, S_IFREG, progress, callback_data))
+				if (callback(COPYFILE_NO_ERROR, COPYFILE_REGULAR,
+							progress, callback_data))
 				{
 					if (offset_store)
 						*offset_store = progress.data.offset;
@@ -51,7 +52,8 @@ copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 			copyfile_error_t err = COPYFILE_ERROR_READ;
 
 			if (callback
-					? !callback(err, S_IFREG, progress, callback_data)
+					? !callback(err, COPYFILE_REGULAR, progress,
+						callback_data)
 					: errno == EINTR)
 				continue;
 			else
@@ -72,7 +74,8 @@ copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 				copyfile_error_t err = COPYFILE_ERROR_WRITE;
 
 				if (callback
-						? !callback(err, S_IFREG, progress, callback_data)
+						? !callback(err, COPYFILE_REGULAR, progress,
+							callback_data)
 						: errno == EINTR)
 					continue;
 				else
@@ -94,7 +97,8 @@ copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 
 	if (offset_store)
 		*offset_store = progress.data.offset;
-	if (callback && callback(COPYFILE_EOF, S_IFREG, progress, callback_data))
+	if (callback && callback(COPYFILE_EOF, COPYFILE_REGULAR, progress,
+				callback_data))
 		return COPYFILE_ABORTED;
 	return COPYFILE_NO_ERROR;
 }

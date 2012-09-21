@@ -25,22 +25,25 @@ copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
 		dev_t devid, copyfile_callback_t callback, void* callback_data)
 {
 	copyfile_progress_t progress;
+	copyfile_filetype_t cb_ftype;
 
 	switch (ftype)
 	{
 #ifdef S_IFBLK
 		case S_IFBLK:
 			progress.device = devid;
+			cb_ftype = COPYFILE_BLKDEV;
 			break;
 #endif /*S_IFBLK*/
 #ifdef S_IFCHR
 		case S_IFCHR:
 			progress.device = devid;
+			cb_ftype = COPYFILE_CHRDEV;
 			break;
 #endif /*S_IFCHR*/
 	}
 
-	if (callback && callback(COPYFILE_NO_ERROR, ftype, progress,
+	if (callback && callback(COPYFILE_NO_ERROR, cb_ftype, progress,
 				callback_data))
 		return COPYFILE_ABORTED;
 
@@ -129,13 +132,13 @@ copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
 			break;
 		else
 		{
-			if (!callback || callback(err, ftype, progress,
+			if (!callback || callback(err, cb_ftype, progress,
 						callback_data))
 				return err;
 		}
 	}
 
-	if (callback && callback(COPYFILE_EOF, ftype, progress,
+	if (callback && callback(COPYFILE_EOF, cb_ftype, progress,
 				callback_data))
 		return COPYFILE_ABORTED;
 
