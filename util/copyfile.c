@@ -16,7 +16,7 @@
 #	include <getopt.h>
 #endif
 
-static const char* const copyfile_opts = "alhV";
+static const char* const copyfile_opts = "almhV";
 
 #ifdef HAVE_GETOPT_LONG
 
@@ -33,15 +33,19 @@ static const struct option copyfile_long_opts[] =
 
 #endif /*HAVE_GETOPT_LONG*/
 
-static const char* const copyfile_help_f =
+static const char* const copyfile_help_usage =
 "Usage: %s [OPTIONS] SOURCE DEST\n"
 "\n"
 "Copy a single file SOURCE to a new full path DEST. DEST must not\n"
 "be just a directory, it has to contain the filename as well.\n"
-"\n"
+"\n";
+
+static const char* const copyfile_help_options =
 "  -a, --archive         copy file metadata as well\n"
 "  -l, --link            try to create a hard link first, fall back to copy\n"
 "                        (implies --archive)\n"
+"  -m, --move            move (rename) instead of copying, fall back to copy\n"
+"                        and remove (implies --archive)\n"
 "\n"
 "  -h, --help            print help message\n"
 "  -V, --version         print program version\n";
@@ -50,6 +54,7 @@ int main(int argc, char* argv[])
 {
 	int opt_archive = 0;
 	int opt_link = 0;
+	int opt_move = 0;
 
 	while (1)
 	{
@@ -73,15 +78,20 @@ int main(int argc, char* argv[])
 			case 'l':
 				opt_link = 1;
 				break;
+			case 'm':
+				opt_move = 1;
+				break;
 
 			case 'h':
-				printf(copyfile_help_f, argv[0]);
+				printf(copyfile_help_usage, argv[0]);
+				fputs(copyfile_help_options, stdout);
 				return 0;
 			case 'V':
 				printf("%s\n", PACKAGE_STRING);
 				return 0;
 			default:
-				fprintf(stderr, copyfile_help_f, argv[0]);
+				fprintf(stderr, copyfile_help_usage, argv[0]);
+				fputs(copyfile_help_options, stderr);
 				return 1;
 		}
 	}
@@ -96,7 +106,15 @@ int main(int argc, char* argv[])
 			else
 				fprintf(stderr, "%s: too many parameters\n", argv[0]);
 
-			fprintf(stderr, copyfile_help_f, argv[0]);
+			fprintf(stderr, copyfile_help_usage, argv[0]);
+			fputs(copyfile_help_options, stderr);
+			return 1;
+		}
+
+		if (opt_move && opt_link)
+		{
+			fprintf(stderr, "%s: --link and --move must not be used together\n",
+					argv[0]);
 			return 1;
 		}
 	}
@@ -107,7 +125,9 @@ int main(int argc, char* argv[])
 
 		int ret;
 
-		if (opt_link)
+		if (opt_move)
+			ret = copyfile_move_file(source, dest, 0, 0, 0);
+		else if (opt_link)
 			ret = copyfile_link_file(source, dest, 0, 0, 0);
 		else if (opt_archive)
 			ret = copyfile_archive_file(source, dest, 0, 0, 0, 0, 0);
