@@ -16,7 +16,7 @@
 #	include <getopt.h>
 #endif
 
-static const char* const copyfile_opts = "almhV";
+static const char* const copyfile_opts = "almPhV";
 
 #ifdef HAVE_GETOPT_LONG
 
@@ -24,6 +24,7 @@ static const struct option copyfile_long_opts[] =
 {
 	{ "archive", no_argument, 0, 'a' },
 	{ "link", no_argument, 0, 'l' },
+	{ "progress", no_argument, 0, 'P' },
 
 	{ "help", no_argument, 0, 'h' },
 	{ "version", no_argument, 0, 'V' },
@@ -46,15 +47,43 @@ static const char* const copyfile_help_options =
 "                        (implies --archive)\n"
 "  -m, --move            move (rename) instead of copying, fall back to copy\n"
 "                        and remove (implies --archive)\n"
+"  -P, --progress        enable verbose progress reporting\n"
 "\n"
 "  -h, --help            print help message\n"
 "  -V, --version         print program version\n";
+
+static const char* const ecma_prev_line = "\033[A";
+
+static int progress_callback(copyfile_error_t state,
+		copyfile_filetype_t ftype, copyfile_progress_t prog,
+		void* data, int default_return)
+{
+	if (ftype == COPYFILE_REGULAR)
+	{
+		unsigned int perc;
+
+		prog.data.offset >>= 10;
+		prog.data.size >>= 10;
+
+		perc = (prog.data.offset * 100) / prog.data.size;
+
+		if (state == COPYFILE_EOF || prog.data.offset != 0)
+			fputs(ecma_prev_line, stderr);
+
+		fprintf(stderr, "%7lu / %7lu KiB (%3u%%)\n",
+				prog.data.offset, prog.data.size, perc);
+	}
+
+	return default_return;
+}
 
 int main(int argc, char* argv[])
 {
 	int opt_archive = 0;
 	int opt_link = 0;
 	int opt_move = 0;
+
+	copyfile_callback_t opt_progress = 0;
 
 	while (1)
 	{
@@ -80,6 +109,9 @@ int main(int argc, char* argv[])
 				break;
 			case 'm':
 				opt_move = 1;
+				break;
+			case 'P':
+				opt_progress = progress_callback;
 				break;
 
 			case 'h':
@@ -126,13 +158,14 @@ int main(int argc, char* argv[])
 		int ret;
 
 		if (opt_move)
-			ret = copyfile_move_file(source, dest, 0, 0, 0);
+			ret = copyfile_move_file(source, dest, 0, opt_progress, 0);
 		else if (opt_link)
-			ret = copyfile_link_file(source, dest, 0, 0, 0);
+			ret = copyfile_link_file(source, dest, 0, opt_progress, 0);
 		else if (opt_archive)
-			ret = copyfile_archive_file(source, dest, 0, 0, 0, 0, 0);
+			ret = copyfile_archive_file(source, dest, 0, 0, 0,
+					opt_progress, 0);
 		else
-			ret = copyfile_copy_file(source, dest, 0, 0, 0);
+			ret = copyfile_copy_file(source, dest, 0, opt_progress, 0);
 
 		if (!ret)
 			return 0;
