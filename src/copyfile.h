@@ -259,16 +259,19 @@ typedef union
  *
  * In any of those cases, the @type parameter will hold the file type.
  * The @progress parameter carries detailed progress information,
- * and @data carries any user-provided data.
+ * @data carries any user-provided data and @default_return carries
+ * the return value which would cause the default behavior (equivalent
+ * to one where callback was not defined).
  *
  * At the start of copying and during the process, the callback is
  * called with @state == COPYFILE_NO_ERROR. At the end of file, @state
- * is COPYFILE_EOF.
+ * is COPYFILE_EOF. In both cases, @default_return will be 0.
  *
  * In case of an error, @state has any other value; and the system errno
  * variable is set appropriately. Note that the errno may be EINTR as
  * well, which allows the user to interrupt the copy and enter
- * the callback.
+ * the callback. The @default_return parameter will carry the default
+ * way of handling a particular error.
  *
  * The data types available in the @progress union for various file
  * types and states are described in copyfile_progress_t description.
@@ -290,7 +293,7 @@ typedef union
  */
 typedef int (*copyfile_callback_t)(copyfile_error_t state,
 		copyfile_filetype_t type, copyfile_progress_t progress,
-		void* data);
+		void* data, int default_return);
 
 /**
  * Get a textual message for an error.

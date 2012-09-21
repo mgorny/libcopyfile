@@ -54,7 +54,7 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 
 	progress.symlink.length = expected_length;
 	if (callback && callback(COPYFILE_NO_ERROR, COPYFILE_SYMLINK,
-				progress, callback_data))
+				progress, callback_data, 0))
 		return COPYFILE_ABORTED;
 
 	if (expected_length < buf_size)
@@ -73,7 +73,7 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 					{
 						progress.symlink.target = buf;
 						if (callback(COPYFILE_EOF, COPYFILE_SYMLINK,
-									progress, callback_data))
+									progress, callback_data, 0))
 							return COPYFILE_ABORTED;
 					}
 
@@ -82,7 +82,7 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 
 				/* does the user want to retry? */
 				if (!callback || callback(ret, COPYFILE_SYMLINK,
-							progress, callback_data))
+							progress, callback_data, 1))
 					return ret;
 			}
 			else
@@ -113,7 +113,7 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 
 				/* retry? */
 				if (callback && !callback(ret, COPYFILE_SYMLINK,
-							progress, callback_data))
+							progress, callback_data, 1))
 					continue;
 
 				if (!buf) /* avoid freeing in the less likely branch */
@@ -130,7 +130,7 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 				{
 					progress.symlink.target = buf;
 					if (callback(COPYFILE_EOF, COPYFILE_SYMLINK,
-								progress, callback_data))
+								progress, callback_data, 0))
 						return COPYFILE_ABORTED;
 				}
 				break;
@@ -154,7 +154,7 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 			{
 				/* does the user want to retry? */
 				if (!callback && callback(ret, COPYFILE_SYMLINK,
-							progress, callback_data))
+							progress, callback_data, 1))
 					break;
 			}
 		}

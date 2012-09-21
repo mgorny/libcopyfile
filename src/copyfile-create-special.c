@@ -44,7 +44,7 @@ copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
 	}
 
 	if (callback && callback(COPYFILE_NO_ERROR, cb_ftype, progress,
-				callback_data))
+				callback_data, 0))
 		return COPYFILE_ABORTED;
 
 	while (1)
@@ -133,13 +133,13 @@ copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
 		else
 		{
 			if (!callback || callback(err, cb_ftype, progress,
-						callback_data))
+						callback_data, 1))
 				return err;
 		}
 	}
 
 	if (callback && callback(COPYFILE_EOF, cb_ftype, progress,
-				callback_data))
+				callback_data, 0))
 		return COPYFILE_ABORTED;
 
 	return COPYFILE_NO_ERROR;
