@@ -1,5 +1,6 @@
 bin_PROGRAMS = util/copyfile
 lib_LTLIBRARIES = src/libcopyfile.la
+include_HEADERS = src/copyfile.h
 
 src_libcopyfile_la_SOURCES = \
 	src/copyfile-copy-stream.c \
