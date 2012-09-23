@@ -13,7 +13,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 AC_ARG_ENABLE([debug],
 	AS_HELP_STRING([--enable-debug], [Enable stderr debug]))
 
-AC_ARG_ENABLE([libacl],
+AC_ARG_ENABLE([acl],
 	AS_HELP_STRING([--disable-acl],
 		[Disable support for ACLs (default: autodetect)]))
 
@@ -26,7 +26,7 @@ AS_IF([test x"$enable_acl" != x"no"],
 	])
 ])
 
-AC_ARG_ENABLE([libattr],
+AC_ARG_ENABLE([xattr],
 	AS_HELP_STRING([--disable-xattr],
 		[Disable support for file extended attributes (default: autodetect)]))
 
