@@ -2,6 +2,9 @@ bin_PROGRAMS = util/copyfile
 lib_LTLIBRARIES = src/libcopyfile.la
 include_HEADERS = src/copyfile.h
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = data/libcopyfile.pc
+
 src_libcopyfile_la_SOURCES = \
 	src/copyfile-copy-stream.c \
 	src/copyfile-copy-regular.c \

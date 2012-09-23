@@ -63,5 +63,5 @@ AS_IF([test x"$enable_debug" = x"yes"],
 ])
 
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile data/libcopyfile.pc])
 AC_OUTPUT
