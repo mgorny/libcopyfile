@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
 				fputs(copyfile_help_options, stdout);
 				return 0;
 			case 'V':
-				printf("%s\n", PACKAGE_STRING);
+				puts(PACKAGE_STRING);
 				return 0;
 			default:
 				fprintf(stderr, copyfile_help_usage, argv[0]);
