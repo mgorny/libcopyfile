@@ -1,3 +1,5 @@
+ACLOCAL_AMFLAGS = -I m4
+
 bin_PROGRAMS = util/copyfile
 lib_LTLIBRARIES = src/libcopyfile.la
 include_HEADERS = src/copyfile.h
