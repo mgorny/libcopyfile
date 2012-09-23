@@ -25,7 +25,7 @@ src_libcopyfile_la_LDFLAGS = -no-undefined -version-info 0:0:0
 
 util_copyfile_SOURCES = \
 	util/copyfile.c
-util_copyfile_CPPFLAGS = -Isrc
+util_copyfile_CPPFLAGS = -I$(top_srcdir)/src
 util_copyfile_LDADD = src/libcopyfile.la
 
 EXTRA_DIST = NEWS
