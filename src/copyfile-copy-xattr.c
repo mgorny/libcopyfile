@@ -16,7 +16,7 @@
 #	include <errno.h>
 
 #	ifdef HAVE_LGETXATTR /* GNU/Linux */
-#		include <attr/xattr.h>
+#		include <sys/xattr.h>
 #	endif
 #	ifdef HAVE_EXTATTR_GET_LINK /* BSD */
 #		include <sys/extattr.h>
