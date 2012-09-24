@@ -7,7 +7,7 @@
 #	include "config.h"
 #endif
 
-#include "copyfile.h"
+#include "libcopyfile.h"
 
 const char* copyfile_error_message(copyfile_error_t err)
 {

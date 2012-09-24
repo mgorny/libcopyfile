@@ -2,7 +2,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 bin_PROGRAMS = util/copyfile
 lib_LTLIBRARIES = src/libcopyfile.la
-include_HEADERS = src/copyfile.h
+include_HEADERS = src/libcopyfile.h
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = data/libcopyfile.pc
@@ -22,7 +22,7 @@ src_libcopyfile_la_SOURCES = \
 	src/copyfile-link-file.c \
 	src/copyfile-move-file.c \
 	src/copyfile-error-message.c \
-	src/common.h src/copyfile.h
+	src/common.h src/libcopyfile.h
 src_libcopyfile_la_LDFLAGS = -no-undefined -version-info 0:0:0
 
 util_copyfile_SOURCES = \

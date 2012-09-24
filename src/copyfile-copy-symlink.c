@@ -7,7 +7,7 @@
 #	include "config.h"
 #endif
 
-#include "copyfile.h"
+#include "libcopyfile.h"
 #include "common.h"
 
 #ifdef S_IFLNK
