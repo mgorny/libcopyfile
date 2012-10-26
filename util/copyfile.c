@@ -7,7 +7,7 @@
 #	include "config.h"
 #endif
 
-#include "copyfile.h"
+#include "libcopyfile.h"
 
 #include <stdio.h>
 #include <unistd.h>
