@@ -44,7 +44,7 @@ AC_ARG_ENABLE([cap],
 	AS_HELP_STRING([--disable-cap],
 		[Disable support for capabilities (default: autodetect)]))
 
-AS_IF([test x"$enable_libcap" != x"no"],
+AS_IF([test x"$enable_cap" != x"no"],
 [
 	AC_SEARCH_LIBS([cap_get_file], [cap],
 	[
