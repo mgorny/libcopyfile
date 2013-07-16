@@ -16,6 +16,11 @@
 #include <unistd.h>
 #include <errno.h>
 
+#ifdef HAVE_BTRFS_IOCTL_H
+#	include <sys/ioctl.h>
+#	include <btrfs/ioctl.h>
+#endif
+
 copyfile_error_t copyfile_copy_regular(const char* source,
 		const char* dest, off_t expected_size,
 		copyfile_callback_t callback, void* callback_data)
@@ -50,6 +55,18 @@ copyfile_error_t copyfile_copy_regular(const char* source,
 		errno = hold_errno;
 		return COPYFILE_ERROR_OPEN_DEST;
 	}
+
+	/* start by trying the btrfs clone op */
+#ifdef HAVE_BTRFS_IOCTL_H
+	if (!ioctl(fd_out, BTRFS_IOC_CLONE, fd_in))
+	{
+		if (close(fd_out)) /* delayed error? */
+			return COPYFILE_ERROR_WRITE;
+		close(fd_in);
+
+		return 0;
+	}
+#endif
 
 	/* we can't use posix_fallocate() if we wouldn't be able to truncate
 	 * afterwards. not that any system can really have former without

@@ -53,6 +53,15 @@ AS_IF([test x"$enable_cap" != x"no"],
 	])
 ])
 
+AC_ARG_ENABLE([btrfs],
+	AS_HELP_STRING([--disable-btrfs],
+		[Disable support for btrfs CoW (default: autodetect)]))
+
+AS_IF([test x"$enable_btrfs" != x"no"],
+[
+	AC_CHECK_HEADERS([btrfs/ioctl.h])
+])
+
 AC_CHECK_FUNCS([acl_get_link_np chown fchmodat ftruncate lchown \
 	link mkfifo mknod posix_fallocate lutimes utimes utimensat \
 	getopt_long])
