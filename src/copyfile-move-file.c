@@ -38,6 +38,20 @@ copyfile_error_t copyfile_move_file(const char* source,
 					progress, callback_data, 0))
 				return COPYFILE_ABORTED;
 
+			/* if dest was a hardlink to source, rename() will not
+			 * unlink it. do it ourselves. */
+			while (unlink(source) && errno != ENOENT)
+			{
+				if (callback)
+				{
+					if (callback(COPYFILE_ERROR_UNLINK_SOURCE,
+								COPYFILE_MOVE, progress, callback_data, 1))
+						return COPYFILE_ERROR_UNLINK_SOURCE;
+				}
+				else
+					return COPYFILE_ERROR_UNLINK_SOURCE;
+			}
+
 			return COPYFILE_NO_ERROR;
 		}
 		else if (callback)
