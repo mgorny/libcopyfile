@@ -16,13 +16,14 @@
 #	include <getopt.h>
 #endif
 
-static const char* const copyfile_opts = "almPhV";
+static const char* const copyfile_opts = "aclmPhV";
 
 #ifdef HAVE_GETOPT_LONG
 
 static const struct option copyfile_long_opts[] =
 {
 	{ "archive", no_argument, 0, 'a' },
+	{ "clone", no_argument, 0, 'c' },
 	{ "link", no_argument, 0, 'l' },
 	{ "progress", no_argument, 0, 'P' },
 
@@ -43,6 +44,7 @@ static const char* const copyfile_help_usage =
 
 static const char* const copyfile_help_options =
 "  -a, --archive         copy file metadata as well\n"
+"  -c, --clone           try to atomically clone file (may leave stale file)\n"
 "  -l, --link            try to create a hard link first, fall back to copy\n"
 "                        (implies --archive)\n"
 "  -m, --move            move (rename) instead of copying, fall back to copy\n"
@@ -89,6 +91,7 @@ static int progress_callback(copyfile_error_t state,
 int main(int argc, char* argv[])
 {
 	int opt_archive = 0;
+	int opt_clone = 0;
 	int opt_link = 0;
 	int opt_move = 0;
 
@@ -112,6 +115,9 @@ int main(int argc, char* argv[])
 		{
 			case 'a':
 				opt_archive = 1;
+				break;
+			case 'c':
+				opt_clone = 1;
 				break;
 			case 'l':
 				opt_link = 1;
@@ -173,6 +179,8 @@ int main(int argc, char* argv[])
 		else if (opt_archive)
 			ret = copyfile_archive_file(source, dest, 0, 0, 0,
 					opt_progress, 0);
+		else if (opt_clone)
+			ret = copyfile_clone_file(source, dest, 0);
 		else
 			ret = copyfile_copy_file(source, dest, 0, opt_progress, 0);
 

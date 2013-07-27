@@ -14,6 +14,7 @@ src_libcopyfile_la_SOURCES = \
 	src/copyfile-copy-symlink.c \
 	src/copyfile-create-special.c \
 	src/copyfile-copy-file.c \
+	src/copyfile-clone-file.c \
 	src/copyfile-set-stat.c \
 	src/copyfile-copy-xattr.c \
 	src/copyfile-copy-acl.c \

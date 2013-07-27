@@ -511,6 +511,32 @@ copyfile_error_t copyfile_copy_file(const char* source,
 		copyfile_callback_t callback, void* callback_data);
 
 /**
+ * Try to clone file to a new location, using atomic clone operation.
+ *
+ * If @source is a regular file, an atomic clone operation using
+ * copyfile_clone_stream() will be attempted. If it fails, stray file
+ * may be left over.
+ *
+ * Otherwise, COPYFILE_ERROR_UNSUPPORTED will be returned.
+ *
+ * The @dest argument has to be a full path to the new file and not
+ * just a directory.
+ *
+ * If the information about the file has been obtained using the lstat()
+ * function, a pointer to the obtained structure should be passed
+ * as @st. Otherwise, a NULL pointer should be passed.
+ *
+ * Please note that if the information was obtained using the stat()
+ * function instead and if @source is a symbolic link, the underlying
+ * file will be copied instead.
+ *
+ * Returns 0 on success, an error otherwise. errno will hold the system
+ * error code.
+ */
+copyfile_error_t copyfile_clone_file(const char* source,
+		const char* dest, const struct stat* st);
+
+/**
  * Set stat() metadata for a given file.
  *
  * The new metadata should be passed as @st. It must not be NULL. This
