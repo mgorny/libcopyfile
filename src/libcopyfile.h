@@ -58,6 +58,7 @@ typedef enum
 	COPYFILE_ERROR_RENAME,
 	COPYFILE_ERROR_UNLINK_SOURCE,
 	COPYFILE_ERROR_UNLINK_DEST,
+	COPYFILE_ERROR_IOCTL_CLONE,
 	COPYFILE_ERROR_DOMAIN_MAX,
 
 	/**
@@ -387,6 +388,18 @@ const char* copyfile_error_message(copyfile_error_t err);
 copyfile_error_t copyfile_copy_stream(int fd_in, int fd_out,
 		off_t* offset_store, off_t expected_size,
 		copyfile_callback_t callback, void* callback_data);
+
+/**
+ * Clone the contents of an input stream onto an output stream
+ * using Copy-on-Write if possible.
+ *
+ * The streams will not be closed. In case of an error, the current
+ * offset on both streams is undefined.
+ *
+ * Returns 0 on success, an error otherwise. errno will hold the system
+ * error code.
+ */
+copyfile_error_t copyfile_clone_stream(int fd_in, int fd_out);
 
 /**
  * Copy the contents of a regular file onto a new file.

@@ -9,6 +9,7 @@ pkgconfig_DATA = data/libcopyfile.pc
 
 src_libcopyfile_la_SOURCES = \
 	src/copyfile-copy-stream.c \
+	src/copyfile-clone-stream.c \
 	src/copyfile-copy-regular.c \
 	src/copyfile-copy-symlink.c \
 	src/copyfile-create-special.c \
