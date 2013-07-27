@@ -27,6 +27,9 @@ copyfile_error_t copyfile_link_file(const char* source,
 					progress, callback_data, 0))
 			return COPYFILE_ABORTED;
 
+		if (unlink(dest) && errno != ENOENT)
+			return COPYFILE_ERROR_UNLINK_DEST;
+
 		while (1)
 		{
 			if (!link(source, dest))
