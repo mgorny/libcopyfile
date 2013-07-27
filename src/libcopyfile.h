@@ -760,4 +760,133 @@ copyfile_error_t copyfile_move_file(const char* source,
 		const char* dest, unsigned int* result_flags,
 		copyfile_callback_t callback, void* callback_data);
 
+/**
+ * Copy the given file to a new location, preserving given metadata.
+ * Contents are copied from @dup_copy which is assumed to have the same
+ * contents as @source.
+ *
+ * This is basically equivalent to copyfile_archive_file() except that
+ * it provides better means for de-duplication when copying files across
+ * filesystems (assuming that @dup_copy and @dest are on the same fs).
+ *
+ * The @dest argument has to be a full path to the new file and not
+ * just a directory.
+ *
+ * If the information about the file has been obtained using the lstat()
+ * function, a pointer to the obtained structure should be passed
+ * as @st. Otherwise, a NULL pointer should be passed.
+ *
+ * The @flags parameter can specify which metadata should be copied.
+ * To copy all available metadata, specify 0 (which results in
+ * COPYFILE_COPY_ALL_METADATA). For a more fine-grained choice, take
+ * a look at description of copyfile_metadata_flag_t.
+ *
+ * If @result_flags is not NULL, the bit-field pointed by it will
+ * contain a copy of flags explaining which operations were done
+ * successfully (it will be reset to zero first).
+ *
+ * If @callback is non-NULL, it will be used to report progress and/or
+ * errors. The @callback_data will be passed to it. For more details,
+ * see copyfile_callback_t description.
+ *
+ * If @callback is NULL, default error handling will be used. The EINTR
+ * error will be retried indefinitely, and other errors will cause
+ * immediate failure.
+ *
+ * Returns 0 on success, an error otherwise. errno will hold the system
+ * error code.
+ */
+copyfile_error_t copyfile_archive_file_dedup(const char* source,
+		const char* dest, const char* dup_copy, const struct stat* st,
+		unsigned int flags, unsigned int* result_flags,
+		copyfile_callback_t callback, void* callback_data);
+
+/**
+ * Hard-link the given file to a new location, fallback to copy.
+ * In the latter case, contents are copied from @dup_copy which is
+ * assumed to have the same contents as @source.
+ *
+ * This is basically equivalent to copyfile_link_file() except that
+ * it provides better means for de-duplication when copying files across
+ * filesystems (assuming that @dup_copy and @dest are on the same fs).
+ *
+ * The @source file must not be a directory. The @dest argument has to
+ * be a full path to the new file and not just a directory.
+ *
+ * If @result_flags is not NULL, the bit-field pointed by it will
+ * contain a copy of flags explaining which metadata was copied
+ * successfully (it will be reset to zero first). If hard-link
+ * succeeded, it will be set to COPYFILE_COPY_ALL_METADATA.
+ *
+ * If @callback is non-NULL, it will be used to report progress and/or
+ * errors. The @callback_data will be passed to it. For more details,
+ * see copyfile_callback_t description.
+ *
+ * Note that the '0' callback can be called twice -- once with
+ * COPYFILE_HARDLINK and then with another type if link() failed.
+ * The COPYFILE_EOF callback will be called only once.
+ *
+ * The callback will be used to report both link() and copy errors.
+ * In case of the former, 0 (retry) return with EXDEV and EPERM will
+ * cause the function to try regular copy. The 1 (abort) code will
+ * always cause immediate failure.
+ *
+ * If @callback is NULL, default error handling will be used. The EINTR
+ * error will be retried indefinitely, and other errors will cause
+ * immediate failure.
+ *
+ * Returns 0 on success, an error otherwise. errno will hold the system
+ * error code.
+ */
+copyfile_error_t copyfile_link_file_dedup(const char* source,
+		const char* dest, const char* dup_copy,
+		const struct stat* st, unsigned int* result_flags,
+		copyfile_callback_t callback, void* callback_data);
+
+/**
+ * Move the given file to a new location, fallback to copy + unlink.
+ * In the latter case, contents are copied from @dup_copy which is
+ * assumed to have the same contents as @source.
+ *
+ * This is basically equivalent to copyfile_move_file() except that
+ * it provides better means for de-duplication when copying files across
+ * filesystems (assuming that @dup_copy and @dest are on the same fs).
+ *
+ * The @source file must not be a directory. The @dest argument has to
+ * be a full path to the new file and not just a directory.
+ *
+ * If the destination file exists and rename() call fails, it will be
+ * unlinked and then replaced. The source file will be removed only
+ * after successful copy.
+ *
+ * If @result_flags is not NULL, the bit-field pointed by it will
+ * contain a copy of flags explaining which metadata was copied
+ * successfully (it will be reset to zero first). If move (rename)
+ * succeeded, it will be set to COPYFILE_COPY_ALL_METADATA.
+ *
+ * If @callback is non-NULL, it will be used to report progress and/or
+ * errors. The @callback_data will be passed to it. For more details,
+ * see copyfile_callback_t description.
+ *
+ * Note that the '0' callback can be called twice -- once with
+ * COPYFILE_MOVE and then with another type if rename() fails.
+ * The COPYFILE_EOF callback will be called only once.
+ *
+ * The callback will be used to report both rename() and copy errors.
+ * In case of the former, 0 (retry) return with EXDEV will cause
+ * the function to try regular copy. The 1 (abort) code will always
+ * cause immediate failure.
+ *
+ * If @callback is NULL, default error handling will be used. The EINTR
+ * error will be retried indefinitely, and other errors will cause
+ * immediate failure.
+ *
+ * Returns 0 on success, an error otherwise. errno will hold the system
+ * error code.
+ */
+copyfile_error_t copyfile_move_file_dedup(const char* source,
+		const char* dest, const char* dup_copy,
+		const struct stat* st, unsigned int* result_flags,
+		copyfile_callback_t callback, void* callback_data);
+
 #endif /*COPYFILE_H*/

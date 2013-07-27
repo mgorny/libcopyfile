@@ -16,7 +16,7 @@
 #	include <getopt.h>
 #endif
 
-static const char* const copyfile_opts = "aclmPhV";
+static const char* const copyfile_opts = "aclmPD:hV";
 
 #ifdef HAVE_GETOPT_LONG
 
@@ -26,6 +26,8 @@ static const struct option copyfile_long_opts[] =
 	{ "clone", no_argument, 0, 'c' },
 	{ "link", no_argument, 0, 'l' },
 	{ "progress", no_argument, 0, 'P' },
+
+	{ "duplicate-from", required_argument, 0, 'D' },
 
 	{ "help", no_argument, 0, 'h' },
 	{ "version", no_argument, 0, 'V' },
@@ -49,6 +51,9 @@ static const char* const copyfile_help_options =
 "                        (implies --archive)\n"
 "  -m, --move            move (rename) instead of copying, fall back to copy\n"
 "                        and remove (implies --archive)\n"
+"  -D, --duplicate-from DUP-SOURCE\n"
+"                        clone file contents from file DUP-SOURCE (which has\n"
+"                        the same contents and is better candidate for CoW)\n"
 "  -P, --progress        enable verbose progress reporting\n"
 "\n"
 "  -h, --help            print help message\n"
@@ -95,6 +100,8 @@ int main(int argc, char* argv[])
 	int opt_link = 0;
 	int opt_move = 0;
 
+	const char* duplicate_from = 0;
+
 	copyfile_callback_t opt_progress = 0;
 
 	while (1)
@@ -124,6 +131,9 @@ int main(int argc, char* argv[])
 				break;
 			case 'm':
 				opt_move = 1;
+				break;
+			case 'D':
+				duplicate_from = optarg;
 				break;
 			case 'P':
 				opt_progress = progress_callback;
@@ -172,17 +182,37 @@ int main(int argc, char* argv[])
 
 		int ret;
 
-		if (opt_move)
-			ret = copyfile_move_file(source, dest, 0, opt_progress, 0);
-		else if (opt_link)
-			ret = copyfile_link_file(source, dest, 0, opt_progress, 0);
-		else if (opt_archive)
-			ret = copyfile_archive_file(source, dest, 0, 0, 0,
-					opt_progress, 0);
-		else if (opt_clone)
-			ret = copyfile_clone_file(source, dest, 0);
+		if (duplicate_from)
+		{
+			if (opt_move)
+				ret = copyfile_move_file_dedup(source, dest, duplicate_from,
+						0, 0, opt_progress, 0);
+			else if (opt_link)
+				ret = copyfile_link_file_dedup(source, dest, duplicate_from,
+						0, 0, opt_progress, 0);
+			else if (opt_archive)
+				ret = copyfile_archive_file_dedup(source, dest, duplicate_from,
+						0, 0, 0, opt_progress, 0);
+			else if (opt_clone)
+				ret = copyfile_clone_file(duplicate_from, dest, 0);
+			else
+				ret = copyfile_copy_file(duplicate_from, dest, 0,
+						opt_progress, 0);
+		}
 		else
-			ret = copyfile_copy_file(source, dest, 0, opt_progress, 0);
+		{
+			if (opt_move)
+				ret = copyfile_move_file(source, dest, 0, opt_progress, 0);
+			else if (opt_link)
+				ret = copyfile_link_file(source, dest, 0, opt_progress, 0);
+			else if (opt_archive)
+				ret = copyfile_archive_file(source, dest, 0, 0, 0,
+						opt_progress, 0);
+			else if (opt_clone)
+				ret = copyfile_clone_file(source, dest, 0);
+			else
+				ret = copyfile_copy_file(source, dest, 0, opt_progress, 0);
+		}
 
 		if (!ret)
 			return 0;
