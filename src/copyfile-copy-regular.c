@@ -54,9 +54,9 @@ copyfile_error_t copyfile_copy_regular(const char* source,
 	/* start by trying the atomic clone op */
 	if (!copyfile_clone_stream(fd_in, fd_out))
 	{
+		close(fd_in);
 		if (close(fd_out)) /* delayed error? */
 			return COPYFILE_ERROR_WRITE;
-		close(fd_in);
 
 		return 0;
 	}
@@ -88,9 +88,9 @@ copyfile_error_t copyfile_copy_regular(const char* source,
 		}
 #endif
 
+		close(fd_in);
 		if (close(fd_out) && !ret) /* delayed error? */
 			return COPYFILE_ERROR_WRITE;
-		close(fd_in);
 
 		errno = hold_errno;
 		return ret;
