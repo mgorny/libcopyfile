@@ -139,7 +139,13 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 
 			if (data_len > data_buf_size)
 			{
-				char* new_data_bufp = realloc(data_bufp, data_len);
+				char* new_data_bufp;
+
+				if (data_buf_size == initial_buf_size)
+					new_data_bufp = malloc(data_len);
+				else
+					new_data_bufp = realloc(data_bufp, data_len);
+
 				if (!new_data_bufp)
 				{
 					if (!ret)
