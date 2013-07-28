@@ -187,6 +187,7 @@ typedef enum
 	COPYFILE_CHRDEV,
 	COPYFILE_BLKDEV,
 	COPYFILE_UNIXSOCK,
+	COPYFILE_DIRECTORY,
 
 	/**
 	 * A special constant stating that hardlink is being/was created

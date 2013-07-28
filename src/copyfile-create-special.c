@@ -41,6 +41,22 @@ copyfile_error_t copyfile_create_special(const char* path, mode_t ftype,
 			cb_ftype = COPYFILE_CHRDEV;
 			break;
 #endif /*S_IFCHR*/
+		case S_IFDIR:
+			cb_ftype = COPYFILE_DIRECTORY;
+			break;
+#ifdef S_IFIFO
+		case S_IFIFO:
+			cb_ftype = COPYFILE_FIFO;
+			break;
+#endif /*S_IFIFO*/
+#ifdef S_IFSOCK
+		case S_IFSOCK:
+			cb_ftype = COPYFILE_UNIXSOCK;
+			break;
+#endif /*S_IFSOCK*/
+		default:
+			assert(not_reached);
+			return COPYFILE_ERROR_INTERNAL;
 	}
 
 	if (callback && callback(COPYFILE_NO_ERROR, cb_ftype, progress,
