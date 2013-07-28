@@ -86,7 +86,7 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 #endif
 		if (list_len == -1)
 		{
-			if (list_buf_size > initial_buf_size)
+			if (list_bufp != list_buf)
 				free(list_bufp);
 
 			return COPYFILE_ERROR_XATTR_LIST;
@@ -141,7 +141,7 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 			{
 				char* new_data_bufp;
 
-				if (data_buf_size == initial_buf_size)
+				if (data_bufp == data_buf)
 					new_data_bufp = malloc(data_len);
 				else
 					new_data_bufp = realloc(data_bufp, data_len);
@@ -196,9 +196,9 @@ copyfile_error_t copyfile_copy_xattr(const char* source,
 			}
 		}
 
-		if (list_buf_size > initial_buf_size)
+		if (list_bufp != list_buf)
 			free(list_bufp);
-		if (data_buf_size > initial_buf_size)
+		if (data_bufp != data_buf)
 			free(data_bufp);
 
 		/* set COPYFILE_COPY_XATTR even if there were no regular xattrs,
