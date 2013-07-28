@@ -131,7 +131,10 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 					progress.symlink.target = buf;
 					if (callback(COPYFILE_EOF, COPYFILE_SYMLINK,
 								progress, callback_data, 0))
+					{
+						free(buf);
 						return COPYFILE_ABORTED;
+					}
 				}
 				break;
 			}
@@ -153,7 +156,7 @@ copyfile_error_t copyfile_copy_symlink(const char* source,
 			else
 			{
 				/* does the user want to retry? */
-				if (!callback && callback(ret, COPYFILE_SYMLINK,
+				if (callback && callback(ret, COPYFILE_SYMLINK,
 							progress, callback_data, 1))
 					break;
 			}
